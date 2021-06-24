@@ -1,0 +1,44 @@
+{
+    "foo": {
+        "/": { "~/": 42 },
+        "~~": { "/~" : [ 3, 5, 7, 11, 13, 17 ] }
+    },
+    "bar": {
+        "baz": {
+            "qux": [
+                1,
+                "Lorem ipsum",
+                null,
+                true,
+                false,
+                {
+                    "FOO": {
+                        "BAR": "dolor sit amet",
+                        "BAZ": {
+                            "QUX": "consetetur"
+                        }
+                    }
+                },
+                [
+                    [
+                        43,
+                        44,
+                        {
+                            "QUUX": {
+                                "CORGE": true,
+                                "corge": false,
+                                "Corge": "sadipscing elitr"
+                            }
+                        }
+                    ],
+                    [
+                        "sed diam nonumy eirmod tempor invidunt",
+                        {
+                            "foo": "ut labore et dolore magna"
+                        }
+                    ]                    
+                ]
+            ]
+        }
+    }
+}
