@@ -3,6 +3,12 @@
 namespace alcamo\json;
 
 /**
+ * @namespace alcamo::json
+ *
+ * @brief Easy-to-use JSON documents with JSON pointer support
+ */
+
+/**
  * @brief Object node in a JSON tree
  */
 class JsonNode
