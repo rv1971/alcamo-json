@@ -68,9 +68,9 @@ class JsonNode
     }
 
     /**
-     * @brief Create a document node
+     * @brief Create a JSON node
      * - If $value is a nonempty numerically-indexed array, create an array.
-     * - Else, if $value is an object or iterable, call createNode()
+     * - Else, if $value is an object or associative array, call createNode()
      *   recursively.
      * - Else, use $value as-is.
      *
@@ -91,11 +91,22 @@ class JsonNode
 
                 return $result;
 
-            case is_object($value) || is_iterable($value):
-                return new self($value, $this, $key);
+            case is_object($value) || is_array($value):
+                return $this->createNodeObject($value, $this, $key);
 
             default:
                 return $value;
         }
+    }
+
+    /**
+     * @brief Create a JSON node
+     *
+     * This can be overridden in derived classes to create nodes of different
+     * types.
+     */
+    private function createNodeObject($data, ?self $parent, $key)
+    {
+        return new self($data, $parent, $key);
     }
 }
