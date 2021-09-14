@@ -108,8 +108,11 @@ class JsonNode
      * This can be overridden in derived classes to create nodes of different
      * types.
      */
-    public function createNodeObject($data, ?self $parent, $key)
-    {
+    public function createNodeObject(
+        $data,
+        ?self $parent = null,
+        ?string $key = null
+    ): self {
         return new self($data, $parent, $key);
     }
 }
