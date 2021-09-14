@@ -9,8 +9,7 @@ class RecursiveWalker implements \Iterator
 
     private $currentStack_;     ///< array
     private $currentParent_;    ///< JsonNode|array
-    private $currentProps_;     ///< array
-    private $currentIndex_;     ///< int
+    private $currentIterator_;  ///< Iterator over parent props
     private $currentParentPtr_; ///< JSON pointer string
 
     private $currentKey_;  ///< JSON pointer string
@@ -43,55 +42,59 @@ class RecursiveWalker implements \Iterator
         ) {
             $this->currentStack_[] = [
                 $this->currentParent_,
-                $this->currentProps_,
-                $this->currentIndex_,
+                $this->currentIterator_,
                 $this->currentParentPtr_
             ];
 
             $this->currentParent_ = $this->currentNode_;
-            $this->currentProps_ =
-                array_keys(get_object_vars($this->currentParent_));
-            $this->currentIndex_ = 0;
+            $this->currentIterator_ =
+                (new \ArrayObject(
+                    is_object($this->currentParent_)
+                    ? get_object_vars($this->currentParent_)
+                    : $this->currentParent_
+                ))->getIterator();
             $this->currentParentPtr_ = $this->currentKey_;
         } else {
             /// otherwise, go up until finding a level where there is a sibling
-            while (
-                !isset($this->currentProps_[$this->currentIndex_++])
-                && $this->currentStack_
+            for (
+                $this->currentIterator_->next();
+                !$this->currentIterator_->valid() && $this->currentStack_;
+                $this->currentIterator_->next()
             ) {
                 [
                     $this->currentParent_,
-                    $this->currentProps_,
-                    $this->currentIndex_,
+                    $this->currentIterator_,
                     $this->currentParentPtr_
                 ] = array_pop($this->currentStack_);
             }
 
             /// exit iteration if no more siblings on any level
-            if (!isset($this->currentProps_[$this->currentIndex_])) {
+            if (!$this->currentIterator_->valid()) {
                 $this->currentKey_ = null;
                 $this->currentNode_ = null;
                 return;
             }
         }
 
-        $currentProp = $this->currentProps_[$this->currentIndex_];
+        $this->currentKey_ =
+            ($this->currentParentPtr_ == '/'
+             ? '/'
+             : "$this->currentParentPtr_/")
+            . str_replace(
+                [ '~', '/' ],
+                [ '~0', '~1' ],
+                $this->currentIterator_->key()
+            );
 
-        $this->currentKey_ = $this->currentParentPtr_ . '/'
-            . str_replace([ '~', '/' ], [ '~0', '~1' ], $currentProp);
-
-        $this->currentNode_ = is_object($this->currentParent_)
-            ? $this->currentParent_->$currentProp
-            : $this->currentParent_[$currentProp];
+        $this->currentNode_ = $this->currentIterator_->current();
     }
 
     public function rewind(): void
     {
         $this->currentStack_ = [];
         $this->currentParent_ = [ $this->startNode_ ];
-        $this->currentProps_ = [ 0 ];
-        $this->currentIndex_ = 0;
-        $this->currentParentPtr_ = '';
+        $this->currentIterator_ =
+            (new \ArrayObject($this->currentParent_))->getIterator();
 
         $this->currentKey_ = $this->startNode_->getJsonPtr();
         $this->currentNode_ = $this->startNode_;

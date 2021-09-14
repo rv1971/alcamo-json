@@ -30,9 +30,11 @@ class JsonNode
         $this->key_ = $key;
 
         if (isset($parent)) {
-            $this->jsonPtr_ = "$parent->jsonPtr_/$key";
+            $this->jsonPtr_ = $parent->jsonPtr_ == '/'
+                ? "/$key"
+                : "$parent->jsonPtr_/$key";
         } else {
-            $this->jsonPtr_ = '';
+            $this->jsonPtr_ = '/';
         }
 
         foreach ($data as $subKey => $value) {

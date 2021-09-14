@@ -47,7 +47,7 @@ class JsonDocumentTest extends TestCase
         $qux = $jsonDoc->bar->baz->qux;
 
         return [
-            [ $jsonDoc, '' ],
+            [ $jsonDoc, '/' ],
             [ $jsonDoc->foo, '/foo' ],
             [ $jsonDoc->foo->{'/'}, '/foo/~1' ],
             [ $jsonDoc->foo->{'~~'}, '/foo/~0~0' ],
