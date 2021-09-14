@@ -21,8 +21,11 @@ class JsonNode
      * @brief Construct from object or iterable, creating a public property
      * for each key
      */
-    protected function __construct($data, ?self $parent, $key)
-    {
+    public function __construct(
+        $data,
+        ?self $parent = null,
+        ?string $key = null
+    ) {
         $this->parent_ = $parent;
         $this->key_ = $key;
 
@@ -76,7 +79,7 @@ class JsonNode
      *
      * @sa [How to check if PHP array is associative or sequential?](https://stackoverflow.com/questions/173400/how-to-check-if-php-array-is-associative-or-sequential)
      */
-    private function createNode($key, $value)
+    public function createNode($key, $value)
     {
         switch (true) {
             case is_array($value)
@@ -105,7 +108,7 @@ class JsonNode
      * This can be overridden in derived classes to create nodes of different
      * types.
      */
-    private function createNodeObject($data, ?self $parent, $key)
+    public function createNodeObject($data, ?self $parent, $key)
     {
         return new self($data, $parent, $key);
     }

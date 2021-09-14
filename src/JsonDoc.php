@@ -19,12 +19,6 @@ class JsonDoc extends JsonNode
         );
     }
 
-    /// @copybrief JsonNode::__construct()
-    public function __construct($data)
-    {
-        parent::__construct($data, null, null);
-    }
-
     /// Get JSON node identified by JSON pointer
     public function getNode(string $jsonPtr)
     {
