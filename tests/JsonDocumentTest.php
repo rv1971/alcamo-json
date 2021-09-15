@@ -7,6 +7,7 @@ use PHPUnit\Framework\TestCase;
 class JsonDocumentTest extends TestCase
 {
     public const FOO_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'foo.json';
+    public const BAR_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'bar.json';
 
     public function testConstruct()
     {
@@ -63,7 +64,8 @@ class JsonDocumentTest extends TestCase
     public function getJsonPtrProvider()
     {
         $jsonDoc = JsonDocument::newFromUrl(
-            'file://' . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
         );
 
         $qux = $jsonDoc->bar->baz->qux;
@@ -93,8 +95,9 @@ class JsonDocumentTest extends TestCase
 
     public function getNodeProvider()
     {
-        $jsonDoc = JsonDocument::newFromJsonText(
-            file_get_contents(self::FOO_FILENAME)
+        $jsonDoc = JsonDocument::newFromUrl(
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
         );
 
         return [
@@ -119,8 +122,9 @@ class JsonDocumentTest extends TestCase
 
     public function testClone()
     {
-        $jsonDoc = JsonDocument::newFromJsonText(
-            file_get_contents(self::FOO_FILENAME)
+        $jsonDoc = JsonDocument::newFromUrl(
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
         );
 
         $bar2 = clone $jsonDoc->bar;
@@ -134,5 +138,27 @@ class JsonDocumentTest extends TestCase
         $bar2->baz->corge = 'Lorem ipsum';
         $this->assertSame('Lorem ipsum', $bar2->baz->corge);
         $this->assertFalse(isset($jsonDoc->bar->baz->corge));
+    }
+
+    public function testResolveInternal()
+    {
+        $jsonDoc = JsonDocument::newFromUrl(
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::BAR_FILENAME)
+        );
+
+        $jsonDoc2 = clone $jsonDoc;
+
+        $this->assertEquals($jsonDoc, $jsonDoc2);
+
+        $jsonDoc2->resolveReferences(JsonNode::RESOLVE_EXTERNAL);
+
+        $this->assertEquals($jsonDoc, $jsonDoc2);
+
+        $jsonDoc2->resolveReferences();
+
+        $this->assertNotEquals($jsonDoc, $jsonDoc2);
+
+        $this->assertSame(false, strpos($jsonDoc2, '$ref'));
     }
 }

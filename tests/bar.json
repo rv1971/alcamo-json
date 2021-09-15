@@ -1,0 +1,20 @@
+{
+    "bar": {
+        "foo": { "$ref": "#/defs/foo" },
+        "bar": [
+            { "$ref": "#/defs/bar" },
+            { "$ref": "#/defs/baz" },
+            { "$ref": "#/defs/qux" }
+        ]
+    },
+    "defs": {
+        "foo": "Lorem ipsum",
+        "bar": 42,
+        "baz": {
+            "foo": "Foo",
+            "bar": true,
+            "qux2": { "$ref": "#/defs/qux/2" }
+        },
+        "qux": [ "Lorem", "ipsum", "dolor", 43, true, null ]
+    }
+}

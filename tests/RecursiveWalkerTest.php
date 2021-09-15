@@ -128,4 +128,44 @@ class RecursiveWalkerTest extends TestCase
             ]
         ];
     }
+
+    public function testReplaceCurrent()
+    {
+        $jsonDoc = JsonDocument::newFromJsonText(
+            file_get_contents(self::FOO_FILENAME)
+        );
+
+        // replaceCurrent() on a node in an object
+        $jsonDoc2 = clone $jsonDoc;
+
+        $walker = new RecursiveWalker($jsonDoc2->bar);
+
+        $walker->next();
+
+        $walker->replaceCurrent('Lorem ipsum');
+
+        $this->assertSame('Lorem ipsum', $jsonDoc2->bar->baz);
+
+        // replaceCurrent() on a node in an array
+        $jsonDoc2 = clone $jsonDoc;
+
+        $walker = new RecursiveWalker($jsonDoc2->bar->baz);
+
+        $walker->next();
+
+        $walker->next();
+
+        $walker->replaceCurrent('dolor');
+
+        $this->assertSame('dolor', $jsonDoc2->bar->baz->qux[0]);
+
+        // replaceCurrent() on the start node
+        $jsonDoc2 = clone $jsonDoc;
+
+        $walker = new RecursiveWalker($jsonDoc2->foo);
+
+        $walker->replaceCurrent('Lorem ipsum');
+
+        $this->assertSame('Lorem ipsum', $jsonDoc2->foo);
+    }
 }

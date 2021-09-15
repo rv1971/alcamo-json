@@ -4,6 +4,9 @@
  * @namespace alcamo::json
  *
  * @brief Easy-to-use JSON documents with JSON pointer support
+ *
+ * @sa [JSON](https://datatracker.ietf.org/doc/html/rfc7159)
+ * @sa [JSON Pointer](https://datatracker.ietf.org/doc/html/rfc6901)
  */
 
 namespace alcamo\json;
@@ -16,6 +19,13 @@ use Psr\Http\Message\UriInterface;
  */
 class JsonNode
 {
+    public const RESOLVE_INTERNAL = 1; ///< Resolve refs within the document
+    public const RESOLVE_EXTERNAL = 2; ///< Resolve refs outside the document
+    public const RESOLVE_ALL      = 3; ///< Resolve all refs
+
+    /// Clone targets when resolving internal refs
+    public const CLONE_INTERNAL_REF_TARGETS = 4;
+
     private $ownerDocument_;   ///< self
     private $parent_;          ///< ?self
     private $jsonPtr_;         ///< string
@@ -62,8 +72,7 @@ class JsonNode
         ?string $key = null,
         ?UriInterface $baseUri = null
     ) {
-        $this->ownerDocument_ =
-            isset($parent) ? $parent->ownerDocument_ : $this;
+        $this->ownerDocument_ = $parent->ownerDocument_ ?? $this;
 
         $this->parent_ = $parent;
 
@@ -75,8 +84,7 @@ class JsonNode
             $this->jsonPtr_ = '/';
         }
 
-        $this->baseUri_ =
-            $baseUri ?? (isset($parent) ? $parent->baseUri_ : null);
+        $this->baseUri_ = $baseUri ?? $parent->baseUri_ ?? null;
 
         foreach ($data as $subKey => $value) {
             $this->$subKey = $this->createNode(
@@ -193,5 +201,30 @@ class JsonNode
         ?UriInterface $baseUri = null
     ): self {
         return new self($data, $parent, $key, $baseUri);
+    }
+
+    public function resolveReferences(int $flags = self::RESOLVE_ALL)
+    {
+        $walker =
+            new RecursiveWalker($this, RecursiveWalker::JSON_OBJECTS_ONLY);
+
+        foreach ($walker as $node) {
+            if (!isset($node->{'$ref'})) {
+                continue;
+            }
+
+            $ref = $node->{'$ref'};
+
+            if ($ref[0] == '#' && $flags & self::RESOLVE_INTERNAL) {
+                $node = $this->ownerDocument_->getNode(substr($ref, 1));
+
+                if ($flags & self::CLONE_INTERNAL_REF_TARGETS) {
+                    $node = clone $node;
+                }
+
+                $walker->replaceCurrent($node);
+            } elseif ($ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL) {
+            }
+        }
     }
 }
