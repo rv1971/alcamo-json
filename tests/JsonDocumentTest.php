@@ -28,6 +28,8 @@ class JsonDocumentTest extends TestCase
             $jsonDoc->bar,
             $jsonDoc->bar->baz->getParent()
         );
+
+        $this->assertNull($jsonDoc->getBaseUri());
     }
 
     /**
@@ -35,6 +37,11 @@ class JsonDocumentTest extends TestCase
      */
     public function testGetJsonPtr($node, $expectedJsonPtr)
     {
+        $expectedBaseUri =
+            'file://' . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME);
+
+        $this->assertSame($expectedBaseUri, (string)$node->getBaseUri());
+
         $this->assertSame($expectedJsonPtr, $node->getJsonPtr());
     }
 

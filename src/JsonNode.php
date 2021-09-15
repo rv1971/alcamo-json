@@ -8,6 +8,9 @@
 
 namespace alcamo\json;
 
+use alcamo\ietf\Uri;
+use Psr\Http\Message\UriInterface;
+
 /**
  * @brief Object node in a JSON tree
  */
@@ -15,23 +18,37 @@ class JsonNode
 {
     private $parent_;  ///< ?self
     private $jsonPtr_; ///< string
+    private $baseUri_; ///< ?UriInterface
 
     public static function newFromJsonText(
         string $jsonText,
+        ?self $parent = null,
+        ?string $key = null,
+        ?UriInterface $baseUri = null,
         ?int $depth = null,
         ?int $flags = null
     ): self {
         return new static(
-            json_decode($jsonText, false, $depth ?? 512, $flags ?? 0)
+            json_decode($jsonText, false, $depth ?? 512, $flags ?? 0),
+            $parent,
+            $key,
+            $baseUri
         );
     }
 
     public static function newFromUrl(
-        string $url,
+        $url,
+        ?self $parent = null,
+        ?string $key = null,
         ?int $depth = null,
         ?int $flags = null
     ): self {
-        return static::newFromJsonText(file_get_contents($url));
+        return static::newFromJsonText(
+            file_get_contents($url),
+            $parent,
+            $key,
+            $url instanceof UriInterface ? $url : new Uri($url)
+        );
     }
 
     /**
@@ -41,7 +58,8 @@ class JsonNode
     public function __construct(
         $data,
         ?self $parent = null,
-        ?string $key = null
+        ?string $key = null,
+        ?UriInterface $baseUri = null
     ) {
         $this->parent_ = $parent;
 
@@ -52,6 +70,9 @@ class JsonNode
         } else {
             $this->jsonPtr_ = '/';
         }
+
+        $this->baseUri_ =
+            $baseUri ?? (isset($parent) ? $parent->baseUri_ : null);
 
         foreach ($data as $subKey => $value) {
             $this->$subKey = $this->createNode(
@@ -81,6 +102,12 @@ class JsonNode
     public function getJsonPtr(): string
     {
         return $this->jsonPtr_;
+    }
+
+    /// Base URI, if specified
+    public function getBaseUri(): ?UriInterface
+    {
+        return $this->baseUri_;
     }
 
     public function toJsonText(?int $flags = null, ?int $depth = null): string
@@ -129,8 +156,9 @@ class JsonNode
     public function createNodeObject(
         $data,
         ?self $parent = null,
-        ?string $key = null
+        ?string $key = null,
+        ?UriInterface $baseUri = null
     ): self {
-        return new self($data, $parent, $key);
+        return new self($data, $parent, $key, $baseUri);
     }
 }
