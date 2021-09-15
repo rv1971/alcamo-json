@@ -16,7 +16,7 @@ trait JsonDocumentTrait
     public function getNode(string $jsonPtr)
     {
         if ($jsonPtr[0] != '/') {
-            /** @throw alcamo:.exception::SyntaxError if $jsonPtr does not
+            /** @throw alcamo::exception::SyntaxError if $jsonPtr does not
              *  start with a slash. */
             throw new SyntaxError($jsonPtr, 0, '; not a valid JSON pointer');
         }

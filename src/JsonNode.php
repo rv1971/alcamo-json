@@ -23,9 +23,6 @@ class JsonNode
     public const RESOLVE_EXTERNAL = 2; ///< Resolve refs outside the document
     public const RESOLVE_ALL      = 3; ///< Resolve all refs
 
-    /// Clone targets when resolving internal refs
-    public const CLONE_INTERNAL_REF_TARGETS = 4;
-
     private $ownerDocument_;   ///< self
     private $parent_;          ///< ?self
     private $jsonPtr_;         ///< string
@@ -145,6 +142,14 @@ class JsonNode
         return $this->jsonPtr_;
     }
 
+    /// Key of this node in the parent node, or null if this is the root
+    public function getKey(): ?string
+    {
+        return $this->jsonPtr_ == '/'
+            ? null
+            : substr($this->jsonPtr_, strrpos($this->jsonPtr_, '/') + 1);
+    }
+
     /// Base URI, if specified
     public function getBaseUri(): ?UriInterface
     {
@@ -203,7 +208,7 @@ class JsonNode
         return new self($data, $parent, $key, $baseUri);
     }
 
-    public function resolveReferences(int $flags = self::RESOLVE_ALL)
+    public function resolveReferences(int $flags = self::RESOLVE_ALL): self
     {
         $walker =
             new RecursiveWalker($this, RecursiveWalker::JSON_OBJECTS_ONLY);
@@ -216,15 +221,34 @@ class JsonNode
             $ref = $node->{'$ref'};
 
             if ($ref[0] == '#' && $flags & self::RESOLVE_INTERNAL) {
-                $node = $this->ownerDocument_->getNode(substr($ref, 1));
+                $newNode = $this->ownerDocument_->getNode(substr($ref, 1));
 
-                if ($flags & self::CLONE_INTERNAL_REF_TARGETS) {
-                    $node = clone $node;
+                if ($newNode instanceof self) {
+                    $newNode = clone $newNode;
+
+                    $newNode->parent_ = $node->parent_;
+                    $newNode->jsonPtr_ = $node->jsonPtr_;
                 }
 
-                $walker->replaceCurrent($node);
+                $walker->replaceCurrent($newNode);
             } elseif ($ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL) {
+                $url = new Uri($ref);
+
+                $newNode =
+                    self::newFromUrl($url->withFragment(''))
+                    ->getNode($url->getFragment());
+
+                if ($newNode instanceof self) {
+                    $newNode->resolveReferences();
+
+                    $newNode = $this->ownerDocument_
+                        ->import($newNode, $node->parent_);
+                }
+
+                $walker->replaceCurrent($newNode);
             }
         }
+
+        return $this;
     }
 }
