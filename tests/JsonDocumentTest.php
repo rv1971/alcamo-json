@@ -40,7 +40,9 @@ class JsonDocumentTest extends TestCase
 
     public function getJsonPtrProvider()
     {
-        $jsonDoc = JsonDocument::newFromUrl(self::FOO_FILENAME);
+        $jsonDoc = JsonDocument::newFromUrl(
+            'file://' . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+        );
 
         $qux = $jsonDoc->bar->baz->qux;
 
