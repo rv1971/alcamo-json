@@ -1,12 +1,12 @@
 <?php
 
-namespace alcamo\json;
-
 /**
  * @namespace alcamo::json
  *
  * @brief Easy-to-use JSON documents with JSON pointer support
  */
+
+namespace alcamo\json;
 
 /**
  * @brief Object node in a JSON tree
@@ -14,7 +14,6 @@ namespace alcamo\json;
 class JsonNode
 {
     private $parent_;  ///< ?self
-    private $key_;     ///< int|string
     private $jsonPtr_; ///< string
 
     public static function newFromJsonText(
@@ -45,7 +44,6 @@ class JsonNode
         ?string $key = null
     ) {
         $this->parent_ = $parent;
-        $this->key_ = $key;
 
         if (isset($parent)) {
             $this->jsonPtr_ = $parent->jsonPtr_ == '/'
