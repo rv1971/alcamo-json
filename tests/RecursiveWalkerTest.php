@@ -11,11 +11,11 @@ class RecursiveWalkerTest extends TestCase
     /**
      * @dataProvider walkerProvider
      */
-    public function testWalker($startNode, $expectedNodes)
+    public function testWalker($startNode, $flags, $expectedNodes)
     {
         $nodes = [];
 
-        foreach (new RecursiveWalker($startNode) as $ptr => $value) {
+        foreach (new RecursiveWalker($startNode, $flags) as $ptr => $value) {
             $nodes[$ptr] = is_object($value)
                 ? get_class($value)
                 : (is_array($value) ? 'array' : $value);
@@ -37,6 +37,7 @@ class RecursiveWalkerTest extends TestCase
         return [
             [
                 $jsonDoc->foo,
+                null,
                 [
                     '/foo' => JsonNode::class,
                     '/foo/~1' => JsonNode::class,
@@ -53,6 +54,7 @@ class RecursiveWalkerTest extends TestCase
             ],
             [
                 $jsonDoc->bar->baz->qux[5],
+                null,
                 [
                     '/bar/baz/qux/5' => JsonNode::class,
                     '/bar/baz/qux/5/FOO' => JsonNode::class,
@@ -63,6 +65,7 @@ class RecursiveWalkerTest extends TestCase
             ],
             [
                 $jsonDoc,
+                null,
                 [
                     '/' => JsonDocument::class,
                     '/foo' => JsonNode::class,
@@ -103,6 +106,24 @@ class RecursiveWalkerTest extends TestCase
                     => 'sed diam nonumy eirmod tempor invidunt',
                     '/bar/baz/qux/6/1/1' => JsonNode::class,
                     '/bar/baz/qux/6/1/1/foo' => 'ut labore et dolore magna'
+                ]
+            ],
+            [
+                $jsonDoc,
+                RecursiveWalker::JSON_OBJECTS_ONLY,
+                [
+                    '/' => JsonDocument::class,
+                    '/foo' => JsonNode::class,
+                    '/foo/~1' => JsonNode::class,
+                    '/foo/~0~0' => JsonNode::class,
+                    '/bar' => JsonNode::class,
+                    '/bar/baz' => JsonNode::class,
+                    '/bar/baz/qux/5' => JsonNode::class,
+                    '/bar/baz/qux/5/FOO' => JsonNode::class,
+                    '/bar/baz/qux/5/FOO/BAZ' => JsonNode::class,
+                    '/bar/baz/qux/6/0/2' => JsonNode::class,
+                    '/bar/baz/qux/6/0/2/QUUX' => JsonNode::class,
+                    '/bar/baz/qux/6/1/1' => JsonNode::class
                 ]
             ]
         ];

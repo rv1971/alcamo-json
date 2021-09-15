@@ -7,7 +7,11 @@ namespace alcamo\json;
  */
 class RecursiveWalker implements \Iterator
 {
+    public const JSON_OBJECTS_ONLY = 1;
+
     private $startNode_;   ///< JsonNode
+
+    protected $nextMethod_; ///< string
 
     private $currentStack_;     ///< array
     private $currentParent_;    ///< JsonNode|array
@@ -17,9 +21,15 @@ class RecursiveWalker implements \Iterator
     private $currentKey_;  ///< JSON pointer string
     private $currentNode_; ///< mixed
 
-    public function __construct(JsonNode $startNode)
+    public function __construct(JsonNode $startNode, ?int $flags = null)
     {
         $this->startNode_ = $startNode;
+
+        if ((int)$flags && self::JSON_OBJECTS_ONLY) {
+            $this->nextMethod_ = 'jsonObjectsOnlyNext';
+        } else {
+            $this->nextMethod_ = 'simpleNext';
+        }
 
         $this->rewind();
     }
@@ -36,6 +46,32 @@ class RecursiveWalker implements \Iterator
     }
 
     public function next(): void
+    {
+        $method = $this->nextMethod_;
+        $this->$method();
+    }
+
+    public function rewind(): void
+    {
+        /* Model the start node as the only child of an artificial
+         * parent. This greatly simplies the implementation of next(). */
+
+        $this->currentStack_ = [];
+        $this->currentParent_ = [ $this->startNode_ ];
+        $this->currentIterator_ =
+            (new \ArrayObject($this->currentParent_))->getIterator();
+
+        $this->currentKey_ = $this->startNode_->getJsonPtr();
+        $this->currentNode_ = $this->startNode_;
+    }
+
+    public function valid(): bool
+    {
+        return isset($this->currentKey_);
+    }
+
+    /// next() implementation procesding to the next node, if any
+    protected function simpleNext(): void
     {
         switch (true) {
             case $this->currentNode_ instanceof JsonNode:
@@ -97,22 +133,14 @@ class RecursiveWalker implements \Iterator
         $this->currentNode_ = $this->currentIterator_->current();
     }
 
-    public function rewind(): void
+    /// next() implementation procesding to the next JSON object, if any
+    protected function jsonObjectsOnlyNext(): void
     {
-        /* Model the start node as the only child of an artificial
-         * parent. This greatly simplies the implementation of next(). */
-
-        $this->currentStack_ = [];
-        $this->currentParent_ = [ $this->startNode_ ];
-        $this->currentIterator_ =
-            (new \ArrayObject($this->currentParent_))->getIterator();
-
-        $this->currentKey_ = $this->startNode_->getJsonPtr();
-        $this->currentNode_ = $this->startNode_;
-    }
-
-    public function valid(): bool
-    {
-        return isset($this->currentKey_);
+        do {
+            $this->simpleNext();
+        } while (
+            isset($this->currentKey_)
+            && !($this->currentNode_ instanceof JsonNode)
+        );
     }
 }
