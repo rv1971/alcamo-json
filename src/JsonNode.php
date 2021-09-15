@@ -16,9 +16,10 @@ use Psr\Http\Message\UriInterface;
  */
 class JsonNode
 {
-    private $parent_;  ///< ?self
-    private $jsonPtr_; ///< string
-    private $baseUri_; ///< ?UriInterface
+    private $ownerDocument_;   ///< self
+    private $parent_;          ///< ?self
+    private $jsonPtr_;         ///< string
+    private $baseUri_;         ///< ?UriInterface
 
     public static function newFromJsonText(
         string $jsonText,
@@ -61,6 +62,9 @@ class JsonNode
         ?string $key = null,
         ?UriInterface $baseUri = null
     ) {
+        $this->ownerDocument_ =
+            isset($parent) ? $parent->ownerDocument_ : $this;
+
         $this->parent_ = $parent;
 
         if (isset($parent)) {
@@ -85,6 +89,17 @@ class JsonNode
     public function __toString(): string
     {
         return $this->toJsonText();
+    }
+
+    /**
+     * @brief Get the document (i.e. the ultimate parent) this node belongs to
+     *
+     * The owner document does not need to be of a specific document type. It
+     * can be a JsonNode or any class derived from it.
+     */
+    public function getOwnerDocument(): self
+    {
+        return $this->ownerDocument_;
     }
 
     /**
