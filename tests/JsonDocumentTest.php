@@ -116,4 +116,23 @@ class JsonDocumentTest extends TestCase
             [ $jsonDoc, '/bar/baz/qux/6/0/2/QUUX/Corge', 'sadipscing elitr' ]
         ];
     }
+
+    public function testClone()
+    {
+        $jsonDoc = JsonDocument::newFromJsonText(
+            file_get_contents(self::FOO_FILENAME)
+        );
+
+        $bar2 = clone $jsonDoc->bar;
+
+        $this->assertEquals($jsonDoc->bar, $bar2);
+
+        $bar2->baz->qux[0] = 2;
+        $this->assertSame(2, $bar2->baz->qux[0]);
+        $this->assertSame(1, $jsonDoc->bar->baz->qux[0]);
+
+        $bar2->baz->corge = 'Lorem ipsum';
+        $this->assertSame('Lorem ipsum', $bar2->baz->corge);
+        $this->assertFalse(isset($jsonDoc->bar->baz->corge));
+    }
 }

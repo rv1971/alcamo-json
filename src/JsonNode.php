@@ -91,6 +91,24 @@ class JsonNode
         return $this->toJsonText();
     }
 
+    /// Create deep copy when cloning
+    public function __clone()
+    {
+        foreach (get_object_vars($this) as $name => $value) {
+            switch ($name) {
+                case 'ownerDocument_':
+                case 'parent_':
+                case 'jsonPtr_':
+                    break;
+
+                default:
+                    if (is_object($value)) {
+                        $this->$name = clone $value;
+                    }
+            }
+        }
+    }
+
     /**
      * @brief Get the document (i.e. the ultimate parent) this node belongs to
      *
