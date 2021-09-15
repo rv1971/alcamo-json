@@ -2,7 +2,9 @@
 
 namespace alcamo\json;
 
-/// Depth-first iterator for a JSON subtree
+/**
+ * @brief Depth-first iterator for a JSON (sub)tree
+ */
 class RecursiveWalker implements \Iterator
 {
     private $startNode_;   ///< JsonNode
@@ -27,6 +29,7 @@ class RecursiveWalker implements \Iterator
         return $this->currentNode_;
     }
 
+    /// Return JSON pointer to current node
     public function key()
     {
         return $this->currentKey_;
@@ -34,12 +37,21 @@ class RecursiveWalker implements \Iterator
 
     public function next(): void
     {
+        switch (true) {
+            case $this->currentNode_ instanceof JsonNode:
+                $children = get_object_vars($this->currentNode_);
+            break;
+
+            case is_array($this->currentNode_):
+                $children = $this->currentNode_;
+                break;
+
+            default:
+                $children = null;
+        }
+
         // if current node has children, go down to first child
-        if (
-            ($this->currentNode_ instanceof JsonNode
-             && get_object_vars($this->currentNode_))
-            || (is_array($this->currentNode_) && $this->currentNode_)
-        ) {
+        if ($children) {
             $this->currentStack_[] = [
                 $this->currentParent_,
                 $this->currentIterator_,
@@ -48,17 +60,13 @@ class RecursiveWalker implements \Iterator
 
             $this->currentParent_ = $this->currentNode_;
             $this->currentIterator_ =
-                (new \ArrayObject(
-                    is_object($this->currentParent_)
-                    ? get_object_vars($this->currentParent_)
-                    : $this->currentParent_
-                ))->getIterator();
+                (new \ArrayObject($children))->getIterator();
             $this->currentParentPtr_ = $this->currentKey_;
         } else {
             /// otherwise, go up until finding a level where there is a sibling
             for (
                 $this->currentIterator_->next();
-                !$this->currentIterator_->valid() && $this->currentStack_;
+                $this->currentStack_ && !$this->currentIterator_->valid();
                 $this->currentIterator_->next()
             ) {
                 [
@@ -91,6 +99,9 @@ class RecursiveWalker implements \Iterator
 
     public function rewind(): void
     {
+        /* Model the start node as the only child of an artificial
+         * parent. This greatly simplies the implementation of next(). */
+
         $this->currentStack_ = [];
         $this->currentParent_ = [ $this->startNode_ ];
         $this->currentIterator_ =
