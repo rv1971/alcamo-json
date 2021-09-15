@@ -12,16 +12,6 @@ use alcamo\exception\SyntaxError;
  */
 trait JsonDocumentTrait
 {
-    public static function newFromJsonText(
-        string $jsonText,
-        ?int $depth = null,
-        ?int $flags = null
-    ): self {
-        return new static(
-            json_decode($jsonText, false, $depth ?? 512, $flags ?? 0)
-        );
-    }
-
     /// Get JSON node identified by JSON pointer
     public function getNode(string $jsonPtr)
     {

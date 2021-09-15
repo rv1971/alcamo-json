@@ -17,6 +17,16 @@ class JsonNode
     private $key_;     ///< int|string
     private $jsonPtr_; ///< string
 
+    public static function newFromJsonText(
+        string $jsonText,
+        ?int $depth = null,
+        ?int $flags = null
+    ): self {
+        return new static(
+            json_decode($jsonText, false, $depth ?? 512, $flags ?? 0)
+        );
+    }
+
     /**
      * @brief Construct from object or iterable, creating a public property
      * for each key
