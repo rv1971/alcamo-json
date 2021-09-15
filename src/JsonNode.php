@@ -27,6 +27,14 @@ class JsonNode
         );
     }
 
+    public static function newFromUrl(
+        string $url,
+        ?int $depth = null,
+        ?int $flags = null
+    ): self {
+        return static::newFromJsonText(file_get_contents($url));
+    }
+
     /**
      * @brief Construct from object or iterable, creating a public property
      * for each key

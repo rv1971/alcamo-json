@@ -40,9 +40,7 @@ class JsonDocumentTest extends TestCase
 
     public function getJsonPtrProvider()
     {
-        $jsonDoc = JsonDocument::newFromJsonText(
-            file_get_contents(self::FOO_FILENAME)
-        );
+        $jsonDoc = JsonDocument::newFromUrl(self::FOO_FILENAME);
 
         $qux = $jsonDoc->bar->baz->qux;
 
