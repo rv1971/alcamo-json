@@ -41,31 +41,6 @@ trait JsonDocumentTrait
         return $current;
     }
 
-    /**
-     * @param $node Node to import in the current document
-     *
-     * @param $jsonPtr JSON pointer pointing to the new node
-     *
-     * @warning This method modifies $node. To import a copy, pass a clone.
-     *
-     * @note This method does not insert the node into the tree. It only
-     * prepares it so that it can then be inserted into the right place.
-     */
-    public function importObjectNode(JsonNode $node, string $jsonPtr): void
-    {
-        $node->$jsonPtr_ = $jsonPtr;
-
-        foreach (
-            new RecursiveWalker(
-                $node,
-                RecursiveWalker::JSON_OBJECTS_ONLY
-            ) as $jsonPtr => $subNode
-        ) {
-            $subNode->ownerDocument_ = $this;
-            $subNode->jsonPtr_ = $jsonPtr;
-        }
-    }
-
     /// Check the internal structure, for debugging only
     public function checkStructure(): void
     {

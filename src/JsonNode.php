@@ -194,6 +194,33 @@ class JsonNode
         return new self($data, $parent, $key, $baseUri);
     }
 
+    /**
+     * @param $node Node to import into the current document
+     *
+     * @param $jsonPtr JSON pointer pointing to the new node
+     *
+     * @warning This method modifies $node. To import a copy, pass a clone.
+     *
+     * @note This method does not insert the node into the tree. It only
+     * prepares it so that it can then be inserted into the right place.
+     */
+    public function importObjectNode(JsonNode $node, string $jsonPtr): self
+    {
+        $node->jsonPtr_ = $jsonPtr;
+
+        foreach (
+            new RecursiveWalker(
+                $node,
+                RecursiveWalker::JSON_OBJECTS_ONLY
+            ) as $jsonPtr => $subNode
+        ) {
+            $subNode->ownerDocument_ = $this->ownerDocument_;
+            $subNode->jsonPtr_ = $jsonPtr;
+        }
+
+        return $node;
+    }
+
     public function resolveReferences(int $flags = self::RESOLVE_ALL): self
     {
         $walker =
