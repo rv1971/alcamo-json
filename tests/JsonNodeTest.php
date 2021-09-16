@@ -10,35 +10,6 @@ class JsonNodeTest extends TestCase
     public const BAR_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'bar.json';
     public const BAZ_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'baz.json';
 
-    public function testConstruct()
-    {
-        $jsonText = file_get_contents(self::FOO_FILENAME);
-
-        $jsonDoc = JsonDocument::newFromJsonText($jsonText);
-
-        $this->assertSame(
-            json_encode(json_decode($jsonText)),
-            (string)$jsonDoc
-        );
-
-        $this->assertSame(
-            $jsonDoc,
-            $jsonDoc->getOwnerDocument()
-        );
-
-        $this->assertSame(
-            $jsonDoc,
-            $jsonDoc->foo->getOwnerDocument()
-        );
-
-        $this->assertSame(
-            $jsonDoc,
-            $jsonDoc->bar->baz->getOwnerDocument()
-        );
-
-        $this->assertNull($jsonDoc->getBaseUri());
-    }
-
     /**
      * @dataProvider getJsonPtrProvider
      */
@@ -60,6 +31,8 @@ class JsonNodeTest extends TestCase
             'file://'
             . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
         );
+
+        $jsonDoc->checkStructure();
 
         $qux = $jsonDoc->bar->baz->qux;
 
@@ -105,6 +78,8 @@ class JsonNodeTest extends TestCase
             . str_replace(DIRECTORY_SEPARATOR, '/', self::BAR_FILENAME)
         );
 
+        $jsonDoc->checkStructure();
+
         $jsonDoc2 = clone $jsonDoc;
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
@@ -115,6 +90,8 @@ class JsonNodeTest extends TestCase
 
         /*
         $jsonDoc2->resolveReferences();
+
+        $jsonDoc2->checkStructure();
 
         $this->assertNotEquals($jsonDoc, $jsonDoc2);
 
@@ -144,11 +121,15 @@ class JsonNodeTest extends TestCase
             . str_replace(DIRECTORY_SEPARATOR, '/', self::BAZ_FILENAME)
         );
 
+        $jsonDoc->checkStructure();
+
         $jsonDoc2 = clone $jsonDoc;
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
         /*
         $jsonDoc2->resolveReferences(JsonNode::RESOLVE_INTERNAL);
+
+        $jsonDoc2->checkStructure();
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
         */

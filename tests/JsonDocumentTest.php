@@ -8,6 +8,37 @@ class JsonDocumentTest extends TestCase
 {
     public const FOO_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'foo.json';
 
+    public function testConstruct()
+    {
+        $jsonText = file_get_contents(self::FOO_FILENAME);
+
+        $jsonDoc = JsonDocument::newFromJsonText($jsonText);
+
+        $this->assertSame(
+            json_encode(json_decode($jsonText)),
+            (string)$jsonDoc
+        );
+
+        $this->assertSame(
+            $jsonDoc,
+            $jsonDoc->getOwnerDocument()
+        );
+
+        $this->assertSame(
+            $jsonDoc,
+            $jsonDoc->foo->getOwnerDocument()
+        );
+
+        $this->assertSame(
+            $jsonDoc,
+            $jsonDoc->bar->baz->getOwnerDocument()
+        );
+
+        $this->assertNull($jsonDoc->getBaseUri());
+
+        $jsonDoc->checkStructure();
+    }
+
     /**
      * @dataProvider getNodeProvider
      */

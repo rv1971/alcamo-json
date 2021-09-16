@@ -2,7 +2,7 @@
 
 namespace alcamo\json;
 
-use alcamo\exception\SyntaxError;
+use alcamo\exception\{DataValidationFailed, SyntaxError};
 
 /**
  * @brief JSON document trait
@@ -42,18 +42,60 @@ trait JsonDocumentTrait
     }
 
     /**
+     * @param $node Node to import in the current document
+     *
+     * @param $jsonPtr JSON pointer pointing to the new node
+     *
      * @warning This method modifies $node. To import a copy, pass a clone.
+     *
+     * @note This method does not insert the node into the tree. It only
+     * prepares it so that it can then be inserted into the right place.
      */
-    public function importObjectNode(JsonNode $node, string $jsonPtr)
+    public function importObjectNode(JsonNode $node, string $jsonPtr): void
     {
+        $node->$jsonPtr_ = $jsonPtr;
+
         foreach (
             new RecursiveWalker(
                 $node,
                 RecursiveWalker::JSON_OBJECTS_ONLY
-            ) as $subNode
+            ) as $jsonPtr => $subNode
         ) {
             $subNode->ownerDocument_ = $this;
-            /** @todo recompute $jsonPtr_ */
+            $subNode->jsonPtr_ = $jsonPtr;
+        }
+    }
+
+    /// Check the internal structure, for debugging only
+    public function checkStructure(): void
+    {
+        foreach (
+            new RecursiveWalker(
+                $this,
+                RecursiveWalker::JSON_OBJECTS_ONLY
+            ) as $jsonPtr => $node
+        ) {
+            if ($node->getOwnerDocument() !== $this) {
+                /** @throw alcamo::exception::DataValidationFailed if node
+                 *  has a wrong owner document. */
+                throw new DataValidationFailed(
+                    $node,
+                    "{$this->getBaseUri()}#$jsonPtr",
+                    null,
+                    "; \$ownerDocument_ differs from document owning this node"
+                );
+            }
+
+            if ($node->getJsonPtr() !== $jsonPtr) {
+                /** @throw alcamo::exception::DataValidationFailed if node
+                 *  has a wrong JSOn pointer. */
+                throw new DataValidationFailed(
+                    $node,
+                    "{$this->getBaseUri()}#$jsonPtr",
+                    null,
+                    "; \$jsonPtr_=\"{$node->getJsonPtr()}\" differs from actual position \"$jsonPtr\""
+                );
+            }
         }
     }
 }
