@@ -7,9 +7,11 @@ namespace alcamo\json;
  */
 class RecursiveWalker implements \Iterator
 {
-    public const JSON_OBJECTS_ONLY = 1;
+    public const JSON_OBJECTS_ONLY = 1; ///< Only return JSON object nodes
+    public const OMIT_START_NODE   = 2; ///< Do not return the start node itself
 
-    private $startNode_;   ///< JsonNode
+    private $startNode_; ///< JsonNode
+    private $flags_;     ///< int
 
     protected $nextMethod_; ///< string
 
@@ -26,8 +28,9 @@ class RecursiveWalker implements \Iterator
     public function __construct(JsonNode &$startNode, ?int $flags = null)
     {
         $this->startNode_ =& $startNode;
+        $this->flags_ = (int)$flags;
 
-        if ($flags && self::JSON_OBJECTS_ONLY) {
+        if ($flags & self::JSON_OBJECTS_ONLY) {
             $this->nextMethod_ = 'jsonObjectsOnlyNext';
         } else {
             $this->nextMethod_ = 'simpleNext';
@@ -69,6 +72,10 @@ class RecursiveWalker implements \Iterator
 
         $this->currentKey_ = $this->startNode_->getJsonPtr();
         $this->currentNode_ = $this->startNode_;
+
+        if ($this->flags_ & self::OMIT_START_NODE) {
+            $this->next();
+        }
     }
 
     public function valid(): bool

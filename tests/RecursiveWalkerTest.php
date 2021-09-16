@@ -54,9 +54,8 @@ class RecursiveWalkerTest extends TestCase
             ],
             [
                 $jsonDoc->bar->baz->qux[5],
-                null,
+                RecursiveWalker::OMIT_START_NODE,
                 [
-                    '/bar/baz/qux/5' => JsonNode::class,
                     '/bar/baz/qux/5/FOO' => JsonNode::class,
                     '/bar/baz/qux/5/FOO/BAR' => 'dolor sit amet',
                     '/bar/baz/qux/5/FOO/BAZ' => JsonNode::class,
