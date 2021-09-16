@@ -13,11 +13,12 @@ class RecursiveWalker implements \Iterator
 
     protected $nextMethod_; ///< string
 
-    private $currentStack_;     ///< array
-    private $currentParent_;    ///< JsonNode|ReferenceContainer
-    private $currentChildKey_;  ///< string
-    private $currentGenerator_; ///< Generator for items of $currentParent_
-    private $currentParentPtr_; ///< JSON pointer string
+    private $currentStack_;         ///< array
+    private $currentParent_;        ///< JsonNode|ReferenceContainer
+    private $currentChildKey_;      ///< string
+    private $currentGenerator_;     ///< Generator for items of $currentParent_
+    private $currentParentPtr_;     ///< JSON pointer string
+    private $skipChildren_ = false; ///< bool
 
     private $currentKey_;  ///< JSON pointer string
     private $currentNode_; ///< mixed
@@ -60,7 +61,7 @@ class RecursiveWalker implements \Iterator
         /* Model the start node as the only child of an artificial parent
          * array. This greatly simplies the implementation of next(). */
 
-        $parent = [ $this->startNode_ ];
+        $parent = [ '' => $this->startNode_ ];
 
         $this->currentStack_ = [];
         $this->currentParent_ = new ReferenceContainer($parent);
@@ -95,6 +96,18 @@ class RecursiveWalker implements \Iterator
         }
     }
 
+    /// Key of current node within its parent
+    public function getCurrentChildKey(): string
+    {
+        return $this->currentChildKey_;
+    }
+
+    /// do not iterate children of current node
+    public function skipChildren(): void
+    {
+        $this->skipChildren_ = true;
+    }
+
     /**
      * @brief Modify the document by replacing the current node
      *
@@ -123,6 +136,11 @@ class RecursiveWalker implements \Iterator
     protected function simpleNext(): void
     {
         switch (true) {
+            case $this->skipChildren_:
+                $this->skipChildren_ = false;
+                $generator = null;
+                break;
+
             case $this->currentNode_ instanceof JsonNode:
                 $generator = $this->iterateObject($this->currentNode_);
             break;

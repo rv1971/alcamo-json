@@ -129,6 +129,43 @@ class RecursiveWalkerTest extends TestCase
         ];
     }
 
+    public function testSkipChildren()
+    {
+        $jsonDoc = JsonDocument::newFromJsonText(
+            file_get_contents(self::FOO_FILENAME)
+        );
+
+        $nodes = [];
+
+        $walker = new RecursiveWalker($jsonDoc);
+
+        foreach ($walker as $ptr => $value) {
+            switch ($ptr)
+            {
+                case '/foo/~0~0':
+                case '/bar/baz/qux':
+                    $walker->skipChildren();
+
+                default:
+                    $nodes[] = $ptr;
+            }
+        }
+
+        $this->assertSame(
+            [
+                '/',
+                '/foo',
+                '/foo/~1',
+                '/foo/~1/~0~1',
+                '/foo/~0~0',
+                '/bar',
+                '/bar/baz',
+                '/bar/baz/qux'
+            ],
+            $nodes
+        );
+    }
+
     public function testReplaceCurrent()
     {
         $jsonDoc = JsonDocument::newFromJsonText(

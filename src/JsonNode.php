@@ -212,7 +212,12 @@ class JsonNode
                 if ($newNode instanceof self) {
                     $newNode = clone $newNode;
 
-                    $newNode->jsonPtr_ = $node->jsonPtr_;
+                    $newNode = $this->importNodeObject(
+                        $newNode,
+                        $walker->getCurrentChildKey()
+                    );
+                } elseif (is_array($newNode)) {
+                    /** @todo ... */
                 }
 
                 $walker->replaceCurrent($newNode);
@@ -226,7 +231,12 @@ class JsonNode
                 if ($newNode instanceof self) {
                     $newNode->resolveReferences();
 
-                    $newNode = $this->import($newNode, $walker->getCurrentChildKey());
+                    $newNode = $this->importNodeObject(
+                        $newNode,
+                        $walker->getCurrentChildKey()
+                    );
+                } elseif (is_array($newNode)) {
+                    /** @todo ... */
                 }
 
                 $walker->replaceCurrent($newNode);

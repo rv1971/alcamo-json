@@ -40,4 +40,20 @@ trait JsonDocumentTrait
 
         return $current;
     }
+
+    /**
+     * @warning This method modifies $node. To import a copy, pass a clone.
+     */
+    public function importObjectNode(JsonNode $node, string $jsonPtr)
+    {
+        foreach (
+            new RecursiveWalker(
+                $node,
+                RecursiveWalker::JSON_OBJECTS_ONLY
+            ) as $subNode
+        ) {
+            $subNode->ownerDocument_ = $this;
+            /** @todo recompute $jsonPtr_ */
+        }
+    }
 }

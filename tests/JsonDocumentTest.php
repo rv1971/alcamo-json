@@ -148,6 +148,7 @@ class JsonDocumentTest extends TestCase
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
 
+        /*
         $jsonDoc2->resolveReferences();
 
         $this->assertNotEquals($jsonDoc, $jsonDoc2);
@@ -168,6 +169,7 @@ class JsonDocumentTest extends TestCase
         $this->assertSame($jsonDoc2->defs->qux, $jsonDoc2->bar->bar[2]);
 
         $this->assertSame('dolor', $jsonDoc2->defs->baz->qux2);
+        */
     }
 
     public function testResolveExternal()
@@ -180,10 +182,11 @@ class JsonDocumentTest extends TestCase
         $jsonDoc2 = clone $jsonDoc;
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
-
+        /*
         $jsonDoc2->resolveReferences(JsonNode::RESOLVE_INTERNAL);
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
+        */
 
         /*
         $jsonDoc2->resolveReferences();
