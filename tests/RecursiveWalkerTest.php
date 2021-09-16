@@ -195,6 +195,27 @@ class RecursiveWalkerTest extends TestCase
 
         $this->assertSame('dolor', $jsonDoc2->bar->baz->qux[0]);
 
+        // replaceCurrent() on a node in a nested array
+        $jsonDoc2 = clone $jsonDoc;
+
+        $walker = new RecursiveWalker(
+            $jsonDoc2->bar->baz,
+            RecursiveWalker::JSON_OBJECTS_ONLY
+        );
+
+        for ($i = 0; $i < 4; $i++) {
+            $walker->next();
+        }
+
+        var_dump((string)$walker->current());
+
+        $walker->replaceCurrent('dolor');
+
+        var_dump((string)$jsonDoc2);
+
+        $this->assertSame('dolor', $jsonDoc2->bar->baz->qux[6]);
+       exit;
+
         // replaceCurrent() on the start node
         $jsonDoc2 = clone $jsonDoc;
 

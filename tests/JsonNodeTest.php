@@ -61,6 +61,10 @@ class JsonNodeTest extends TestCase
         $bar2 = clone $jsonDoc->bar;
 
         $this->assertEquals($jsonDoc->bar, $bar2);
+        $this->assertNotSame($jsonDoc->bar, $bar2);
+
+        $this->assertEquals($jsonDoc->bar->baz->qux[5], $bar2->baz->qux[5]);
+        $this->assertNotSame($jsonDoc->bar->baz->qux[5], $bar2->baz->qux[5]);
 
         $bar2->baz->qux[0] = 2;
         $this->assertSame(2, $bar2->baz->qux[0]);
@@ -69,6 +73,85 @@ class JsonNodeTest extends TestCase
         $bar2->baz->corge = 'Lorem ipsum';
         $this->assertSame('Lorem ipsum', $bar2->baz->corge);
         $this->assertFalse(isset($jsonDoc->bar->baz->corge));
+
+        $jsonDoc2 = clone $jsonDoc;
+
+        $this->assertEquals($jsonDoc->bar, $jsonDoc2->bar);
+        $this->assertNotSame($jsonDoc->bar, $jsonDoc2->bar);
+
+        $this->assertNotSame(
+            $jsonDoc->bar->baz->qux[5],
+            $jsonDoc2->bar->baz->qux[5]
+        );
+
+        $this->assertNotSame(
+            $jsonDoc->bar->baz->qux[6][0][2],
+            $jsonDoc2->bar->baz->qux[6][0][2]
+        );
+    }
+
+    public function testImportObjectNode()
+    {
+        $jsonDoc = JsonDocument::newFromUrl(
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+        );
+
+        $jsonDoc2 = JsonDocument::newFromUrl(
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+        );
+
+        $jsonDoc->bar->foo =
+            $jsonDoc->importObjectNode($jsonDoc2->foo, '/bar/foo');
+
+        $jsonDoc->bar->baz->qux[2] =
+            $jsonDoc->importObjectNode(
+                clone $jsonDoc2->foo->{'~~'}, '/bar/baz/qux/2'
+            );
+
+        $jsonDoc->checkStructure();
+
+        $this->assertSame((string)$jsonDoc->foo, (string)$jsonDoc->bar->foo);
+
+        $this->assertSame(
+            (string)$jsonDoc->bar->baz->qux[2],
+            (string)$jsonDoc2->foo->{'~~'}
+        );
+    }
+
+    public function testImportArrayNode()
+    {
+        $jsonDoc = JsonDocument::newFromUrl(
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+        );
+
+        $jsonDoc2 = clone $jsonDoc;
+
+        $this->assertNotSame(
+            $jsonDoc->bar->baz->qux[6][0][2],
+            $jsonDoc2->bar->baz->qux[6][0][2]
+        );
+
+        $jsonDoc->foo = $jsonDoc->importArrayNode(
+            $jsonDoc2->bar->baz->qux[6],
+            '/foo'
+        );
+
+        $jsonDoc->foo[0][1] = $jsonDoc->importArrayNode(
+            $jsonDoc2->bar->baz->qux[6][1],
+            '/foo/0/1'
+        );
+
+        $jsonDoc->checkStructure();
+
+        $this->assertSame(43, $jsonDoc->foo[0][0]);
+
+        $this->assertSame(
+            (string)$jsonDoc->bar->baz->qux[6][1],
+            (string)$jsonDoc->foo[0][1]
+        );
     }
 
     public function testResolveInternal()

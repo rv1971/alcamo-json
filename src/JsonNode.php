@@ -96,18 +96,15 @@ class JsonNode
     /// Create deep copy when cloning
     public function __clone()
     {
-        foreach (get_object_vars($this) as $name => $value) {
-            switch ($name) {
-                case 'ownerDocument_':
-                case 'parent_':
-                case 'jsonPtr_':
-                    break;
+        $walker = new RecursiveWalker(
+            $this,
+            RecursiveWalker::JSON_OBJECTS_ONLY
+            | RecursiveWalker::OMIT_START_NODE
+        );
 
-                default:
-                    if (is_object($value)) {
-                        $this->$name = clone $value;
-                    }
-            }
+        foreach ($walker as $node) {
+            $walker->replaceCurrent(clone $node);
+            $walker->skipChildren();
         }
     }
 
@@ -221,6 +218,29 @@ class JsonNode
         return $node;
     }
 
+    /**
+     * @param $node Array to import into the current document
+     *
+     * @param $jsonPtr JSON pointer pointing to the new node
+     *
+     * @warning This method modifies $node. To import a copy, pass a clone.
+     *
+     * @note This method does not insert the node into the tree. It only
+     * prepares it so that it can then be inserted into the right place.
+     */
+    public function importArrayNode(array $node, string $jsonPtr): array
+    {
+        $slashPos = strrpos($jsonPtr, '/');
+        $key = substr($jsonPtr, $slashPos + 1);
+
+        $tmpNode = new self([]);
+        $tmpNode->$key = $node;
+
+        return
+            $this->importObjectNode($tmpNode, substr($jsonPtr, 0, $slashPos))
+            ->$key;
+    }
+
     public function resolveReferences(int $flags = self::RESOLVE_ALL): self
     {
         $walker =
@@ -271,5 +291,73 @@ class JsonNode
         }
 
         return $this;
+    }
+
+    public function testImportObjectNode()
+    {
+        $jsonDoc = JsonDocument::newFromUrl(
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+        );
+
+        $jsonDoc2 = JsonDocument::newFromUrl(
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+        );
+
+        $jsonDoc->bar->foo =
+            $jsonDoc->importObjectNode($jsonDoc2->foo, '/bar/foo');
+
+        $jsonDoc->bar->baz->qux[2] =
+            $jsonDoc->importObjectNode(
+                clone $jsonDoc2->foo->{'~~'}, '/bar/baz/qux/2'
+            );
+
+        $jsonDoc->checkStructure();
+
+        $this->assertSame((string)$jsonDoc->foo, (string)$jsonDoc->bar->foo);
+
+        $this->assertSame(
+            (string)$jsonDoc->bar->baz->qux[2],
+            (string)$jsonDoc2->foo->{'~~'}
+        );
+    }
+
+    public function testImportArrayNode()
+    {
+        $jsonDoc = JsonDocument::newFromUrl(
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+        );
+
+        $jsonDoc2 = clone $jsonDoc;
+
+        $this->assertNotSame(
+            $jsonDoc->bar->baz->qux[6],
+            $jsonDoc2->bar->baz->qux[6]
+        );
+
+        $jsonDoc->foo = $jsonDoc->importArrayNode(
+            $jsonDoc2->bar->baz->qux[6],
+            '/foo'
+        );
+        /*
+        $jsonDoc->foo[0][1] = $jsonDoc->importArrayNode(
+            $jsonDoc2->bar->baz->qux[6][1],
+            '/foo/0/1'
+        );
+        */
+
+        var_dump((string)$jsonDoc);
+
+        $jsonDoc->checkStructure();
+
+        $this->assertSame(43, $jsonDoc->foo[0][0]);
+        /*
+        $this->assertSame(
+            (string)$jsonDoc->bar->baz->qux[6][1],
+            (string)$jsonDoc->foo[0][1]
+        );
+        */
     }
 }

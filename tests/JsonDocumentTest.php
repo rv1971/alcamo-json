@@ -73,24 +73,4 @@ class JsonDocumentTest extends TestCase
             [ $jsonDoc, '/bar/baz/qux/6/0/2/QUUX/Corge', 'sadipscing elitr' ]
         ];
     }
-
-    public function testImportObjectNode()
-    {
-        $jsonDoc = JsonDocument::newFromUrl(
-            'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
-        );
-
-        $jsonDoc2 = JsonDocument::newFromUrl(
-            'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
-        );
-
-        $jsonDoc->bar->foo =
-            $jsonDoc->importObjectNode($jsonDoc2->foo, '/bar/foo');
-
-        $jsonDoc->checkStructure();
-
-        $this->assertSame((string)$jsonDoc->foo, (string)$jsonDoc->bar->foo);
-    }
 }
