@@ -23,16 +23,6 @@ class JsonDocumentTest extends TestCase
 
         $this->assertSame(
             $jsonDoc,
-            $jsonDoc->foo->getParent()
-        );
-
-        $this->assertSame(
-            $jsonDoc->bar,
-            $jsonDoc->bar->baz->getParent()
-        );
-
-        $this->assertSame(
-            $jsonDoc,
             $jsonDoc->getOwnerDocument()
         );
 

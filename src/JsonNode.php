@@ -24,7 +24,6 @@ class JsonNode
     public const RESOLVE_ALL      = 3; ///< Resolve all refs
 
     private $ownerDocument_;   ///< self
-    private $parent_;          ///< ?self
     private $jsonPtr_;         ///< string
     private $baseUri_;         ///< ?UriInterface
 
@@ -70,8 +69,6 @@ class JsonNode
         ?UriInterface $baseUri = null
     ) {
         $this->ownerDocument_ = $parent->ownerDocument_ ?? $this;
-
-        $this->parent_ = $parent;
 
         if (isset($parent)) {
             $this->jsonPtr_ = $parent->jsonPtr_ == '/'
@@ -123,17 +120,6 @@ class JsonNode
     public function getOwnerDocument(): self
     {
         return $this->ownerDocument_;
-    }
-
-    /**
-     * @brief Get the closest ancestor that is an object
-     *
-     * @attention This is not the immediate parent if the immediate parent is
-     * an array.
-     */
-    public function getParent(): ?self
-    {
-        return $this->parent_;
     }
 
     /// JSON pointer identifying the present node
@@ -226,7 +212,6 @@ class JsonNode
                 if ($newNode instanceof self) {
                     $newNode = clone $newNode;
 
-                    $newNode->parent_ = $node->parent_;
                     $newNode->jsonPtr_ = $node->jsonPtr_;
                 }
 
@@ -241,8 +226,7 @@ class JsonNode
                 if ($newNode instanceof self) {
                     $newNode->resolveReferences();
 
-                    $newNode = $this->ownerDocument_
-                        ->import($newNode, $node->parent_);
+                    $newNode = $this->import($newNode, $walker->getCurrentChildKey());
                 }
 
                 $walker->replaceCurrent($newNode);
