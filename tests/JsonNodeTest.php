@@ -9,6 +9,7 @@ class JsonNodeTest extends TestCase
     public const FOO_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'foo.json';
     public const BAR_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'bar.json';
     public const BAZ_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'baz.json';
+    public const QUX_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'qux.json';
 
     /**
      * @dataProvider getJsonPtrProvider
@@ -175,13 +176,13 @@ class JsonNodeTest extends TestCase
         $this->assertEquals($jsonDoc, $jsonDoc2);
 
         // does nothing, bar.json has no external references
-        $jsonDoc2->resolveReferences(JsonNode::RESOLVE_EXTERNAL);
+        $jsonDoc2 = $jsonDoc2->resolveReferences(JsonNode::RESOLVE_EXTERNAL);
 
         $jsonDoc2->checkStructure();
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
 
-        $jsonDoc2->resolveReferences();
+        $jsonDoc2 = $jsonDoc2->resolveReferences();
 
         $jsonDoc2->checkStructure();
 
@@ -213,7 +214,8 @@ class JsonNodeTest extends TestCase
         $this->assertSame(null, $jsonDoc2->bar->bar[3] );
     }
 
-    public function testResolveExternal()
+    // replace a document node by another document node
+    public function testResolveExternal1()
     {
         $jsonDoc = JsonDocument::newFromUrl(
             'file://'
@@ -226,16 +228,57 @@ class JsonNodeTest extends TestCase
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
 
-        $jsonDoc2->resolveReferences(JsonNode::RESOLVE_INTERNAL);
+        $jsonDoc2 = $jsonDoc2->resolveReferences(JsonNode::RESOLVE_INTERNAL);
 
         $jsonDoc2->checkStructure();
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
 
-        $jsonDoc2->resolveReferences(JsonNode::RESOLVE_EXTERNAL);
+        $jsonDoc2 = $jsonDoc2->resolveReferences(JsonNode::RESOLVE_EXTERNAL);
 
         $this->assertNotEquals($jsonDoc, $jsonDoc2);
 
         $this->assertSame('#/defs/foo', $jsonDoc2->bar->foo->{'$ref'});
+
+        $jsonDoc2 = $jsonDoc->createDeepCopy();
+
+        $jsonDoc2 = $jsonDoc2->resolveReferences();
+
+        $this->assertNotEquals($jsonDoc, $jsonDoc2);
+
+        // check that all references have been replaced
+        $this->assertSame(false, strpos($jsonDoc2, '$ref'));
+
+        $this->assertSame('Lorem ipsum', $jsonDoc2->bar->foo);
+    }
+
+    // other internal external replacements
+    public function testResolveExternal2()
+    {
+        $jsonDoc = JsonDocument::newFromUrl(
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::QUX_FILENAME)
+        );
+
+        $jsonDoc->checkStructure();
+
+        $jsonDoc2 = $jsonDoc->createDeepCopy();
+
+        $jsonDoc2 = $jsonDoc2->resolveReferences();
+
+        echo json_encode($jsonDoc2, JSON_PRETTY_PRINT);
+
+        $this->assertNotEquals($jsonDoc, $jsonDoc2);
+
+        // check that all references have been replaced
+        $this->assertSame(false, strpos($jsonDoc2, '$ref'));
+
+        // replace node by external node, which has been resolved internally
+        $this->assertSame('Lorem ipsum', $jsonDoc2->foo);
+
+        // replace node by external node, which has been resolved internally
+        // to an array
+        $this->assertSame(42, $jsonDoc2->bar[0]);
+        $this->assertSame(true, $jsonDoc2->bar[1]->qux2);
     }
 }

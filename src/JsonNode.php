@@ -277,28 +277,41 @@ class JsonNode
             ->$key;
     }
 
-    public function resolveReferences(int $flags = self::RESOLVE_ALL): self
+    /**
+     * @warning Event though this method may also modify $this, the return
+     * value may be different from $this and does not even need to be an
+     * object.
+     */
+    public function resolveReferences(int $flags = self::RESOLVE_ALL)
     {
+        $result = $this;
+
         $walker =
-            new RecursiveWalker($this, RecursiveWalker::JSON_OBJECTS_ONLY);
+            new RecursiveWalker($result, RecursiveWalker::JSON_OBJECTS_ONLY);
 
         foreach ($walker as $jsonPtr => $node) {
             /* A loop is necessary because the replacement of the current node
              * could itself be a reference. */
-            while (isset($node->{'$ref'})) {
+            while ($node instanceof self && isset($node->{'$ref'})) {
                 $ref = $node->{'$ref'};
 
                 if ($ref[0] == '#' && $flags & self::RESOLVE_INTERNAL) {
-                    $node = $this->ownerDocument_->getNode(substr($ref, 1));
+                    $node = $result->ownerDocument_->getNode(substr($ref, 1));
+
+                    /* Internal references are replaced by their target and do
+                     * not need to be resolvbed further here because they will
+                     * be reconsidered in the next iteration of the while loop
+                     * if they are objects, or the next iteration of the
+                     * foreach loop if they are arrays. */
 
                     if ($node instanceof self) {
-                        $node = $this->importObjectNode(
+                        $node = $result->importObjectNode(
                             $node,
                             $jsonPtr,
                             self::CLONE_UPON_IMPORT
                         );
                     } elseif (is_array($node)) {
-                        $node = $this->importArrayNode(
+                        $node = $result->importArrayNode(
                             $node,
                             $jsonPtr,
                             self::CLONE_UPON_IMPORT
@@ -314,17 +327,26 @@ class JsonNode
                         : (self::newFromUrl($url->withFragment(''))
                             ->getNode($url->getFragment()));
 
-                    if ($node instanceof self) {
-                        $node->resolveReferences();
+                    /* External references must be completely resolved before
+                     * import because they may contain internal references to
+                     * their document which become unavailabvle after
+                     * importing. */
 
-                        $node = $this->importObjectNode($node, $jsonPtr);
+                    if ($node instanceof self) {
+                        $node = $node->resolveReferences($flags);
+
+                        if ($node instanceof self) {
+                            $node = $result->importObjectNode($node, $jsonPtr);
+                        } elseif (is_array($node)) {
+                            $node = $result->importArrayNode($node, $jsonPtr);
+                        }
 
                         $walker->skipChildren();
                     } elseif (is_array($node)) {
-                        /** @todo ... resolve references recursively */
-                    }
+                        $this->resolveReferencesInArray($node, $flags);
 
-                    var_dump((string)$node);
+                        $node = $result->importArrayNode($node, $jsonPtr);
+                    }
 
                     $walker->replaceCurrent($node);
                 } else {
@@ -334,6 +356,6 @@ class JsonNode
             }
         }
 
-        return $this;
+        return $result;
     }
 }

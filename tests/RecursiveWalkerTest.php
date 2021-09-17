@@ -219,5 +219,14 @@ class RecursiveWalkerTest extends TestCase
         $walker->replaceCurrent('Lorem ipsum');
 
         $this->assertSame('Lorem ipsum', $jsonDoc2->foo);
+
+        // replaceCurrent() on the document node
+        $jsonDoc2 = $jsonDoc->createDeepCopy();
+
+        $walker = new RecursiveWalker($jsonDoc2);
+
+        $walker->replaceCurrent($jsonDoc2->foo);
+
+        $this->assertSame(42, $jsonDoc2->{'/'}->{'~/'});
     }
 }
