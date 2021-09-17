@@ -140,7 +140,7 @@ class JsonNodeTest extends TestCase
         );
 
         $jsonDoc->foo[0][1] = $jsonDoc->importArrayNode(
-            $jsonDoc2->bar->baz->qux[6][1],
+            (clone $jsonDoc2->bar->baz)->qux[6][1],
             '/foo/0/1'
         );
 
@@ -149,8 +149,8 @@ class JsonNodeTest extends TestCase
         $this->assertSame(43, $jsonDoc->foo[0][0]);
 
         $this->assertSame(
-            (string)$jsonDoc->bar->baz->qux[6][1],
-            (string)$jsonDoc->foo[0][1]
+            json_encode($jsonDoc->bar->baz->qux[6][1]),
+            json_encode($jsonDoc->foo[0][1])
         );
     }
 
