@@ -213,8 +213,7 @@ class RecursiveWalkerTest extends TestCase
 
         var_dump((string)$jsonDoc2);
 
-        $this->assertSame('dolor', $jsonDoc2->bar->baz->qux[6]);
-       exit;
+        $this->assertSame('dolor', $jsonDoc2->bar->baz->qux[6][0][2]);
 
         // replaceCurrent() on the start node
         $jsonDoc2 = clone $jsonDoc;

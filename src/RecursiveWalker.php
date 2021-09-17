@@ -83,7 +83,7 @@ class RecursiveWalker implements \Iterator
         return isset($this->currentKey_);
     }
 
-    public function iterateArray(array $data)
+    public function iterateArray(array &$data)
     {
         /* To allow for concurrent iterators, do not iterate the array
          * itself. */
