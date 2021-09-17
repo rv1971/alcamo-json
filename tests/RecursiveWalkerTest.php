@@ -172,7 +172,7 @@ class RecursiveWalkerTest extends TestCase
         );
 
         // replaceCurrent() on a node in an object
-        $jsonDoc2 = clone $jsonDoc;
+        $jsonDoc2 = $jsonDoc->createDeepCopy();
 
         $walker = new RecursiveWalker($jsonDoc2->bar);
 
@@ -183,7 +183,7 @@ class RecursiveWalkerTest extends TestCase
         $this->assertSame('Lorem ipsum', $jsonDoc2->bar->baz);
 
         // replaceCurrent() on a node in an array
-        $jsonDoc2 = clone $jsonDoc;
+        $jsonDoc2 = $jsonDoc->createDeepCopy();
 
         $walker = new RecursiveWalker($jsonDoc2->bar->baz);
 
@@ -196,7 +196,7 @@ class RecursiveWalkerTest extends TestCase
         $this->assertSame('dolor', $jsonDoc2->bar->baz->qux[0]);
 
         // replaceCurrent() on a node in a nested array
-        $jsonDoc2 = clone $jsonDoc;
+        $jsonDoc2 = $jsonDoc->createDeepCopy();
 
         $walker = new RecursiveWalker(
             $jsonDoc2->bar->baz,
@@ -212,7 +212,7 @@ class RecursiveWalkerTest extends TestCase
         $this->assertSame('dolor', $jsonDoc2->bar->baz->qux[6][0][2]);
 
         // replaceCurrent() on the start node
-        $jsonDoc2 = clone $jsonDoc;
+        $jsonDoc2 = $jsonDoc->createDeepCopy();
 
         $walker = new RecursiveWalker($jsonDoc2->foo);
 

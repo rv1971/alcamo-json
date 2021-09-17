@@ -58,7 +58,7 @@ class JsonNodeTest extends TestCase
             . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
         );
 
-        $bar2 = clone $jsonDoc->bar;
+        $bar2 = $jsonDoc->bar->createDeepCopy();
 
         $this->assertEquals($jsonDoc->bar, $bar2);
         $this->assertNotSame($jsonDoc->bar, $bar2);
@@ -74,7 +74,9 @@ class JsonNodeTest extends TestCase
         $this->assertSame('Lorem ipsum', $bar2->baz->corge);
         $this->assertFalse(isset($jsonDoc->bar->baz->corge));
 
-        $jsonDoc2 = clone $jsonDoc;
+        $jsonDoc2 = $jsonDoc->createDeepCopy();
+
+        $jsonDoc2->checkStructure();
 
         $this->assertEquals($jsonDoc->bar, $jsonDoc2->bar);
         $this->assertNotSame($jsonDoc->bar, $jsonDoc2->bar);
@@ -129,7 +131,7 @@ class JsonNodeTest extends TestCase
             . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
         );
 
-        $jsonDoc2 = clone $jsonDoc;
+        $jsonDoc2 = $jsonDoc->createDeepCopy();
 
         $this->assertNotSame(
             $jsonDoc->bar->baz->qux[6][0][2],
@@ -166,21 +168,26 @@ class JsonNodeTest extends TestCase
 
         $jsonDoc->checkStructure();
 
-        $jsonDoc2 = clone $jsonDoc;
+        $jsonDoc2 = $jsonDoc->createDeepCopy();
+
+        $jsonDoc2->checkStructure();
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
 
+        // does nothing, bar.json has no external references
         $jsonDoc2->resolveReferences(JsonNode::RESOLVE_EXTERNAL);
 
+        $jsonDoc2->checkStructure();
+
         $this->assertEquals($jsonDoc, $jsonDoc2);
 
-        /*
         $jsonDoc2->resolveReferences();
 
         $jsonDoc2->checkStructure();
 
         $this->assertNotEquals($jsonDoc, $jsonDoc2);
 
+        // check that all references have been replaced.
         $this->assertSame(false, strpos($jsonDoc2, '$ref'));
 
         $this->assertSame('Lorem ipsum', $jsonDoc2->bar->foo);
@@ -192,12 +199,18 @@ class JsonNodeTest extends TestCase
             (string)$jsonDoc2->bar->bar[1]
         );
 
-        $this->assertSame('dolor', $jsonDoc2->bar->bar[1]->qux2);
+        $this->assertSame(true, $jsonDoc2->bar->bar[1]->qux2);
 
         $this->assertSame($jsonDoc2->defs->qux, $jsonDoc2->bar->bar[2]);
 
-        $this->assertSame('dolor', $jsonDoc2->defs->baz->qux2);
-        */
+        $this->assertSame(true, $jsonDoc2->defs->baz->qux2);
+
+        $this->assertSame(
+            [ "Lorem", "ipsum", true, 43, false, null ],
+            $jsonDoc2->bar->bar[2]
+        );
+
+        $this->assertSame(null, $jsonDoc2->bar->bar[3] );
     }
 
     public function testResolveExternal()
@@ -209,7 +222,7 @@ class JsonNodeTest extends TestCase
 
         $jsonDoc->checkStructure();
 
-        $jsonDoc2 = clone $jsonDoc;
+        $jsonDoc2 = $jsonDoc->createDeepCopy();
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
         /*

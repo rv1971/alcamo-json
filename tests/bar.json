@@ -4,7 +4,8 @@
         "bar": [
             { "$ref": "#/defs/bar" },
             { "$ref": "#/defs/baz" },
-            { "$ref": "#/defs/qux" }
+            { "$ref": "#/defs/qux" },
+            { "$ref": "#/defs/quux" }
         ]
     },
     "defs": {
@@ -15,6 +16,7 @@
             "bar": true,
             "qux2": { "$ref": "#/defs/qux/2" }
         },
-        "qux": [ "Lorem", "ipsum", "dolor", 43, true, null ]
+        "qux": [ "Lorem", "ipsum", true, 43, false, null ],
+        "quux": { "$ref": "#/defs/qux/5" }
     }
 }
