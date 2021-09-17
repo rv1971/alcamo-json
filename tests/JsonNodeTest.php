@@ -107,7 +107,9 @@ class JsonNodeTest extends TestCase
 
         $jsonDoc->bar->baz->qux[2] =
             $jsonDoc->importObjectNode(
-                clone $jsonDoc2->foo->{'~~'}, '/bar/baz/qux/2'
+                $jsonDoc2->foo->{'~~'},
+                '/bar/baz/qux/2',
+                JsonNode::CLONE_UPON_IMPORT
             );
 
         $jsonDoc->checkStructure();
@@ -140,8 +142,9 @@ class JsonNodeTest extends TestCase
         );
 
         $jsonDoc->foo[0][1] = $jsonDoc->importArrayNode(
-            (clone $jsonDoc2->bar->baz)->qux[6][1],
-            '/foo/0/1'
+            $jsonDoc2->bar->baz->qux[6][1],
+            '/foo/0/1',
+            JsonNode::CLONE_UPON_IMPORT
         );
 
         $jsonDoc->checkStructure();
