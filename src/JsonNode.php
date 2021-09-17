@@ -309,17 +309,17 @@ class JsonNode
                 } elseif ($ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL) {
                     $url = new Uri($ref);
 
-                    $node =
-                        self::newFromUrl($url->withFragment(''))
-                        ->getNode($url->getFragment());
+                    $node = $url->getFragment() == ''
+                        ? self::newFromUrl($url)
+                        : (self::newFromUrl($url->withFragment(''))
+                            ->getNode($url->getFragment()));
 
                     if ($node instanceof self) {
                         $node->resolveReferences();
 
-                        $node = $this->importNodeObject(
-                            $node,
-                            $walker->getCurrentChildKey()
-                        );
+                        $node = $this->importObjectNode($node, $jsonPtr);
+
+                        $walker->skipChildren();
                     } elseif (is_array($node)) {
                         /** @todo ... resolve references recursively */
                     }

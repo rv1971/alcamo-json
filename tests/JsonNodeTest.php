@@ -225,22 +225,17 @@ class JsonNodeTest extends TestCase
         $jsonDoc2 = $jsonDoc->createDeepCopy();
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
-        /*
+
         $jsonDoc2->resolveReferences(JsonNode::RESOLVE_INTERNAL);
 
         $jsonDoc2->checkStructure();
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
-        */
 
-        /*
-        $jsonDoc2->resolveReferences();
+        $jsonDoc2->resolveReferences(JsonNode::RESOLVE_EXTERNAL);
 
         $this->assertNotEquals($jsonDoc, $jsonDoc2);
 
-        $this->assertSame(false, strpos($jsonDoc2, '$ref'));
-
-        $this->assertSame('Lorem ipsum', $jsonDoc2->foo);
-        */
+        $this->assertSame('#/defs/foo', $jsonDoc2->bar->foo->{'$ref'});
     }
 }
