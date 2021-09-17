@@ -324,6 +324,8 @@ class JsonNode
                         /** @todo ... resolve references recursively */
                     }
 
+                    var_dump((string)$node);
+
                     $walker->replaceCurrent($node);
                 } else {
                     // exit loop if ref cannot be replaced
