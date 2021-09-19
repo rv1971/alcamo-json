@@ -20,7 +20,7 @@ class RecursiveWalkerTest extends TestCase
                 ? get_class($value)
                 : (is_array($value) ? 'array' : $value);
 
-            if (is_object($value)) {
+            if ($startNode instanceof Json && $value instanceof JsonNode) {
                 $this->assertSame($value->getJsonPtr(), $ptr);
             }
         }
@@ -124,6 +124,114 @@ class RecursiveWalkerTest extends TestCase
                     '/bar/baz/qux/6/0/2/QUUX' => JsonNode::class,
                     '/bar/baz/qux/6/1/1' => JsonNode::class
                 ]
+            ],
+            [
+                $jsonDoc->bar->baz->qux,
+                null,
+                [
+                    '' => 'array',
+                    '0' => 1,
+                    '1' => "Lorem ipsum",
+                    '2' => null,
+                    '3' => true,
+                    '4' => false,
+                    '5' => JsonNode::class,
+                    '5/FOO' => JsonNode::class,
+                    '5/FOO/BAR' => 'dolor sit amet',
+                    '5/FOO/BAZ' => JsonNode::class,
+                    '5/FOO/BAZ/QUX' => 'consetetur',
+                    '6' => 'array',
+                    '6/0' => 'array',
+                    '6/0/0' => 43,
+                    '6/0/1' => 44,
+                    '6/0/2' => JsonNode::class,
+                    '6/0/2/QUUX' => JsonNode::class,
+                    '6/0/2/QUUX/CORGE' => true,
+                    '6/0/2/QUUX/corge' => false,
+                    '6/0/2/QUUX/Corge' => 'sadipscing elitr',
+                    '6/1' => 'array',
+                    '6/1/0'
+                    => 'sed diam nonumy eirmod tempor invidunt',
+                    '6/1/1' => JsonNode::class,
+                    '6/1/1/foo' => 'ut labore et dolore magna'
+                ]
+            ],
+            [
+                $jsonDoc->bar->baz->qux,
+                RecursiveWalker::JSON_OBJECTS_ONLY,
+                [
+                    '5' => JsonNode::class,
+                    '5/FOO' => JsonNode::class,
+                    '5/FOO/BAZ' => JsonNode::class,
+                    '6/0/2' => JsonNode::class,
+                    '6/0/2/QUUX' => JsonNode::class,
+                    '6/1/1' => JsonNode::class
+                ]
+            ],
+            [
+                $jsonDoc->bar->baz->qux[6],
+                null,
+                [
+                    '' => 'array',
+                    '0' => 'array',
+                    '0/0' => 43,
+                    '0/1' => 44,
+                    '0/2' => JsonNode::class,
+                    '0/2/QUUX' => JsonNode::class,
+                    '0/2/QUUX/CORGE' => true,
+                    '0/2/QUUX/corge' => false,
+                    '0/2/QUUX/Corge' => 'sadipscing elitr',
+                    '1' => 'array',
+                    '1/0'
+                    => 'sed diam nonumy eirmod tempor invidunt',
+                    '1/1' => JsonNode::class,
+                    '1/1/foo' => 'ut labore et dolore magna'
+                ]
+            ],
+            [
+                $jsonDoc->bar->baz->qux[0],
+                null,
+                [
+                    '' => 1
+                ]
+            ],
+            [
+                $jsonDoc->bar->baz->qux[1],
+                null,
+                [
+                    '' => 'Lorem ipsum'
+                ]
+            ],
+            [
+                $jsonDoc->bar->baz->qux[2],
+                null,
+                [
+                    '' => null
+                ]
+            ],
+            [
+                $jsonDoc->bar->baz->qux[3],
+                null,
+                [
+                    '' => true
+                ]
+            ],
+            [
+                $jsonDoc->bar->baz->qux[4],
+                null,
+                [
+                    '' => false
+                ]
+            ],
+            [
+                $jsonDoc->bar->baz->qux[0],
+                RecursiveWalker::OMIT_START_NODE,
+                []
+            ],
+            [
+                $jsonDoc->bar->baz->qux[0],
+                RecursiveWalker::JSON_OBJECTS_ONLY,
+                []
             ]
         ];
     }
@@ -165,7 +273,8 @@ class RecursiveWalkerTest extends TestCase
         );
     }
 
-    public function testReplaceCurrent()
+    // replaceCurrent() when start node is a JsonNode
+    public function testReplaceCurrent1()
     {
         $jsonDoc = JsonDocument::newFromJsonText(
             file_get_contents(self::FOO_FILENAME)
@@ -228,5 +337,51 @@ class RecursiveWalkerTest extends TestCase
         $walker->replaceCurrent($jsonDoc2->foo);
 
         $this->assertSame(42, $jsonDoc2->{'/'}->{'~/'});
+    }
+
+    // replaceCurrent() when start node is an array
+    public function testReplaceCurrent2()
+    {
+        $jsonDoc = JsonDocument::newFromJsonText(
+            file_get_contents(self::FOO_FILENAME)
+        );
+
+        // replaceCurrent() on a node in an array
+        $jsonDoc2 = $jsonDoc->createDeepCopy();
+
+        $walker = new RecursiveWalker($jsonDoc2->bar->baz->qux);
+
+        $walker->next();
+
+        $walker->replaceCurrent('consetetur');
+
+        $this->assertSame('consetetur', $jsonDoc2->bar->baz->qux[0]);
+
+        // replaceCurrent() on a node in an object
+        for ($i = 0; $i < 6; $i++) {
+            $walker->next();
+        }
+
+        $walker->replaceCurrent(4242);
+
+        $this->assertSame(4242, $jsonDoc2->bar->baz->qux[5]->FOO);
+
+        // replaceCurrent() on a node in a nested array
+        for ($i = 0; $i < 3; $i++) {
+            $walker->next();
+        }
+
+        $walker->replaceCurrent(false);
+
+        $this->assertSame(false, $jsonDoc2->bar->baz->qux[6][0][0]);
+
+        // replaceCurrent() on the start node
+        $jsonDoc2 = $jsonDoc->createDeepCopy();
+
+        $walker = new RecursiveWalker($jsonDoc2->bar->baz->qux[6]);
+
+        $walker->replaceCurrent('sit amet');
+
+        $this->assertSame('sit amet', $jsonDoc2->bar->baz->qux[6]);
     }
 }

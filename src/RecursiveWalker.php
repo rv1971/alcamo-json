@@ -10,7 +10,7 @@ class RecursiveWalker implements \Iterator
     public const JSON_OBJECTS_ONLY = 1; ///< Only return JSON object nodes
     public const OMIT_START_NODE   = 2; ///< Do not return the start node itself
 
-    private $startNode_; ///< JsonNode
+    private $startNode_; ///< any type
     private $flags_;     ///< int
 
     protected $nextMethod_; ///< string
@@ -25,9 +25,14 @@ class RecursiveWalker implements \Iterator
     private $currentKey_;  ///< JSON pointer string
     private $currentNode_; ///< mixed
 
-    public function __construct(JsonNode &$startNode, ?int $flags = null)
+    public function __construct(&$startNode, ?int $flags = null)
     {
-        $this->startNode_ =& $startNode;
+        if (is_array($startNode)) {
+            $this->startNode_ = new ReferenceContainer($startNode);
+        } else {
+            $this->startNode_ =& $startNode;
+        }
+
         $this->flags_ = (int)$flags;
 
         if ($flags & self::JSON_OBJECTS_ONLY) {
@@ -47,7 +52,12 @@ class RecursiveWalker implements \Iterator
             : $this->currentNode_;
     }
 
-    /// Return JSON pointer to current node
+    /**
+     * @brief Return JSON pointer to current node
+     *
+     * If the start node is not a JSOn node, this is a fragment of a JSOn
+     * pointer.
+     */
     public function key(): string
     {
         return $this->currentKey_;
@@ -70,10 +80,16 @@ class RecursiveWalker implements \Iterator
         $this->currentParent_ = new ReferenceContainer($parent);
         $this->currentGenerator_ = $this->iterateArray($parent);
 
-        $this->currentKey_ = $this->startNode_->getJsonPtr();
+        $this->currentKey_ = $this->startNode_ instanceof JsonNode
+            ? $this->startNode_->getJsonPtr()
+            : '';
         $this->currentNode_ = $this->startNode_;
 
-        if ($this->flags_ & self::OMIT_START_NODE) {
+        if (
+            $this->flags_ & self::OMIT_START_NODE
+            || ($this->flags_ & self::JSON_OBJECTS_ONLY
+                && !($this->startNode_ instanceof JsonNode))
+        ) {
             $this->next();
         }
     }
@@ -122,8 +138,18 @@ class RecursiveWalker implements \Iterator
      */
     public function replaceCurrent($value): void
     {
-        if ($this->currentNode_ === $this->startNode_) {
-            $this->startNode_ = $value;
+        if ($this->startNode_ instanceof JsonNode) {
+            if($this->currentNode_ === $this->startNode_) {
+                $this->startNode_ = $value;
+                $this->currentNode_ = $value;
+                return;
+            }
+        } elseif ($this->currentKey_ == '') {
+            if ($this->startNode_ instanceof ReferenceContainer) {
+                $this->startNode_->value = $value;
+            }
+
+            $this->startNode_ =  $value;
             $this->currentNode_ = $value;
             return;
         }
@@ -199,8 +225,8 @@ class RecursiveWalker implements \Iterator
         $this->currentChildKey_ = $this->currentGenerator_->key();
 
         $this->currentKey_ =
-            ($this->currentParentPtr_ == '/'
-             ? '/'
+            ($this->currentParentPtr_ == '/' || $this->currentParentPtr_ == ''
+             ? $this->currentParentPtr_
              : "$this->currentParentPtr_/")
             . str_replace(
                 [ '~', '/' ],
