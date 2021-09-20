@@ -29,42 +29,6 @@ class JsonNode
     private $jsonPtr_;         ///< string
     private $baseUri_;         ///< ?UriInterface
 
-    public static function newFromJsonText(
-        string $jsonText,
-        ?self $parent = null,
-        ?string $key = null,
-        ?UriInterface $baseUri = null,
-        string $class = JsonDocument::class,
-        ?int $depth = null,
-        int $flags = JSON_THROW_ON_ERROR
-    ): self {
-        return new $class(
-            json_decode($jsonText, false, $depth ?? 512, $flags ?? 0),
-            $parent,
-            $key,
-            $baseUri
-        );
-    }
-
-    public static function newFromUrl(
-        $url,
-        ?self $parent = null,
-        ?string $key = null,
-        string $class = JsonDocument::class,
-        ?int $depth = null,
-        int $flags = JSON_THROW_ON_ERROR
-    ): self {
-        return static::newFromJsonText(
-            file_get_contents($url),
-            $parent,
-            $key,
-            $url instanceof UriInterface ? $url : new Uri($url),
-            $class,
-            $depth,
-            $flags
-        );
-    }
-
     /**
      * @brief Construct from object or iterable, creating a public property
      * for each key
@@ -290,8 +254,14 @@ class JsonNode
      * value may be different from $this and does not even need to be an
      * object.
      */
-    public function resolveReferences(int $flags = self::RESOLVE_ALL)
-    {
+    public function resolveReferences(
+        int $flags = self::RESOLVE_ALL,
+        ?JsonNodeFactory $factory = null
+    ) {
+        if (!isset($factory)) {
+            $factory = new JsonNodeFactory();
+        }
+
         $result = $this;
 
         $walker =
@@ -311,10 +281,10 @@ class JsonNode
                         $url = new Uri($ref);
 
                         if ($url->getFragment() == '') {
-                            $newNode = self::newFromUrl($url);
+                            $newNode = $factory->createFromUrl($url);
                         } else {
                             $newNode =
-                                self::newFromUrl($url->withFragment(''))
+                                $factory->createFromUrl($url->withFragment(''))
                                 ->getNode($url->getFragment());
                         }
                         break;

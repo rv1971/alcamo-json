@@ -29,7 +29,9 @@ class JsonNodeTest extends TestCase
 
     public function getJsonPtrProvider()
     {
-        $jsonDoc = JsonDocument::newFromUrl(
+        $factory = new JsonNodeFactory();
+
+        $jsonDoc = $factory->createFromUrl(
             'file://'
             . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
         );
@@ -55,7 +57,9 @@ class JsonNodeTest extends TestCase
 
     public function testClone()
     {
-        $jsonDoc = JsonDocument::newFromUrl(
+        $factory = new JsonNodeFactory();
+
+        $jsonDoc = $factory->createFromUrl(
             'file://'
             . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
         );
@@ -96,12 +100,14 @@ class JsonNodeTest extends TestCase
 
     public function testImportObjectNode()
     {
-        $jsonDoc = JsonDocument::newFromUrl(
+        $factory = new JsonNodeFactory();
+
+        $jsonDoc = $factory->createFromUrl(
             'file://'
             . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
         );
 
-        $jsonDoc2 = JsonDocument::newFromUrl(
+        $jsonDoc2 = $factory->createFromUrl(
             'file://'
             . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
         );
@@ -128,7 +134,9 @@ class JsonNodeTest extends TestCase
 
     public function testImportArrayNode()
     {
-        $jsonDoc = JsonDocument::newFromUrl(
+        $factory = new JsonNodeFactory();
+
+        $jsonDoc = $factory->createFromUrl(
             'file://'
             . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
         );
@@ -163,7 +171,9 @@ class JsonNodeTest extends TestCase
 
     public function testResolveInternal()
     {
-        $jsonDoc = JsonDocument::newFromUrl(
+        $factory = new JsonNodeFactory();
+
+        $jsonDoc = $factory->createFromUrl(
             'file://'
             . str_replace(DIRECTORY_SEPARATOR, '/', self::BAR_FILENAME)
         );
@@ -218,7 +228,9 @@ class JsonNodeTest extends TestCase
     // replace a document node by another document node
     public function testResolveExternal1()
     {
-        $jsonDoc = JsonDocument::newFromUrl(
+        $factory = new JsonNodeFactory();
+
+        $jsonDoc = $factory->createFromUrl(
             'file://'
             . str_replace(DIRECTORY_SEPARATOR, '/', self::BAZ_FILENAME)
         );
@@ -256,7 +268,9 @@ class JsonNodeTest extends TestCase
     // other internal external replacements
     public function testResolveExternal2()
     {
-        $jsonDoc = JsonDocument::newFromUrl(
+        $factory = new JsonNodeFactory();
+
+        $jsonDoc = $factory->createFromUrl(
             'file://'
             . str_replace(DIRECTORY_SEPARATOR, '/', self::QUX_FILENAME)
         );

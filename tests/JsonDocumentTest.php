@@ -10,9 +10,10 @@ class JsonDocumentTest extends TestCase
 
     public function testConstruct()
     {
+        $factory = new JsonNodeFactory();
         $jsonText = file_get_contents(self::FOO_FILENAME);
 
-        $jsonDoc = JsonDocument::newFromJsonText($jsonText);
+        $jsonDoc = $factory->createFromJsonText($jsonText);
 
         $this->assertSame(
             json_encode(json_decode($jsonText)),
@@ -49,7 +50,9 @@ class JsonDocumentTest extends TestCase
 
     public function getNodeProvider()
     {
-        $jsonDoc = JsonDocument::newFromUrl(
+        $factory = new JsonNodeFactory();
+
+        $jsonDoc = $factory->createFromUrl(
             'file://'
             . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
         );
