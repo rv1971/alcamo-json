@@ -12,6 +12,7 @@
 namespace alcamo\json;
 
 use alcamo\ietf\Uri;
+use GuzzleHttp\Psr7\UriResolver;
 use Psr\Http\Message\UriInterface;
 
 /**
@@ -315,7 +316,10 @@ class JsonNode
                         break;
 
                     case $ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL:
-                        $url = new Uri($ref);
+                        $url = UriResolver::resolve(
+                            $node->baseUri_,
+                            new Uri($ref)
+                        );
 
                         /* The new documents must not be created in their
                          * final place, because then it might be impossible to

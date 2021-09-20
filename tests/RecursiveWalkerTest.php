@@ -251,11 +251,12 @@ class RecursiveWalkerTest extends TestCase
         $walker = new RecursiveWalker($jsonDoc);
 
         foreach ($walker as $ptr => $value) {
-            switch ($ptr)
-            {
+            switch ($ptr) {
                 case '/foo/~0~0':
                 case '/bar/baz/qux':
                     $walker->skipChildren();
+
+                    // intentionally no break
 
                 default:
                     $nodes[] = $ptr;

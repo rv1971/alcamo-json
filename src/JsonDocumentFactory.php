@@ -35,7 +35,8 @@ class JsonDocumentFactory
         );
     }
 
-    public function createFromUrl($url): JsonNode {
+    public function createFromUrl($url): JsonNode
+    {
         return static::createFromJsonText(
             file_get_contents($url),
             $url instanceof UriInterface ? $url : new Uri($url)

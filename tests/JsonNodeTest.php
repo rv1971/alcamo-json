@@ -8,9 +8,16 @@ class JsonNodeTest extends TestCase
 {
     public const FOO_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'foo.json';
     public const BAR_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'bar.json';
-    public const BAZ_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'baz.json';
-    public const QUX_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'qux.json';
-    public const QUUX_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'quux.json';
+    public const BAZ_FILENAME = __DIR__ . DIRECTORY_SEPARATOR
+        . 'foo' . DIRECTORY_SEPARATOR . 'baz.json';
+    public const QUX_FILENAME = __DIR__ . DIRECTORY_SEPARATOR
+        . 'foo' . DIRECTORY_SEPARATOR
+        . 'qux' . DIRECTORY_SEPARATOR
+        . 'qux.json';
+    public const QUUX_FILENAME = __DIR__ . DIRECTORY_SEPARATOR
+        . 'foo' . DIRECTORY_SEPARATOR
+        . 'quux' . DIRECTORY_SEPARATOR
+        . 'quux.json';
 
     /**
      * @dataProvider getJsonPtrProvider

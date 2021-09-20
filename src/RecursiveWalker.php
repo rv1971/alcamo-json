@@ -142,7 +142,7 @@ class RecursiveWalker implements \Iterator
             is_array($value) ? new ReferenceContainer($value) : $value;
 
         if ($this->startNode_ instanceof JsonNode) {
-            if($this->currentNode_ === $this->startNode_) {
+            if ($this->currentNode_ === $this->startNode_) {
                 $this->startNode_ = $value;
                 $this->currentNode_ = $nodeValue;
                 return;
@@ -179,7 +179,7 @@ class RecursiveWalker implements \Iterator
 
             case $this->currentNode_ instanceof JsonNode:
                 $generator = $this->iterateObject($this->currentNode_);
-            break;
+                break;
 
             case $this->currentNode_ instanceof ReferenceContainer:
                 $generator = $this->iterateArray($this->currentNode_->value);
