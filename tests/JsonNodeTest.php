@@ -119,7 +119,7 @@ class JsonNodeTest extends TestCase
             $jsonDoc->importObjectNode(
                 $jsonDoc2->foo->{'~~'},
                 '/bar/baz/qux/2',
-                JsonNode::CLONE_UPON_IMPORT
+                JsonNode::COPY_UPON_IMPORT
             );
 
         $jsonDoc->checkStructure();
@@ -156,7 +156,7 @@ class JsonNodeTest extends TestCase
         $jsonDoc->foo[0][1] = $jsonDoc->importArrayNode(
             $jsonDoc2->bar->baz->qux[6][1],
             '/foo/0/1',
-            JsonNode::CLONE_UPON_IMPORT
+            JsonNode::COPY_UPON_IMPORT
         );
 
         $jsonDoc->checkStructure();
@@ -222,7 +222,17 @@ class JsonNodeTest extends TestCase
             $jsonDoc2->bar->bar[2]
         );
 
-        $this->assertSame(null, $jsonDoc2->bar->bar[3] );
+        $this->assertSame(null, $jsonDoc2->bar->bar[3]);
+
+        // replace refs only in part of the document
+
+        $jsonDoc3 = $jsonDoc->createDeepCopy();
+
+        $jsonDoc3->bar->bar[3]->resolveReferences();
+
+        $this->assertSame(null, $jsonDoc3->bar->bar[3]);
+
+        $this->assertSame('#/defs/qux/5', $jsonDoc3->defs->quux->{'$ref'});
     }
 
     // replace a document node by another document node
@@ -265,7 +275,7 @@ class JsonNodeTest extends TestCase
         $this->assertSame('Lorem ipsum', $jsonDoc2->bar->foo);
     }
 
-    // other internal external replacements
+    // other internal/external replacements
     public function testResolveExternal2()
     {
         $factory = new JsonDocumentFactory();

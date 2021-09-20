@@ -19,7 +19,7 @@ use Psr\Http\Message\UriInterface;
  */
 class JsonNode
 {
-    public const CLONE_UPON_IMPORT = 1; ///< Clone nodes in import methods
+    public const COPY_UPON_IMPORT = 1; ///< Clone nodes in import methods
 
     public const RESOLVE_INTERNAL = 1; ///< Resolve refs within the document
     public const RESOLVE_EXTERNAL = 2; ///< Resolve refs outside the document
@@ -30,23 +30,12 @@ class JsonNode
     private $baseUri_;         ///< ?UriInterface
 
     /**
-     * @brief Create a JSON node
-     *
-     * This can be overridden in derived classes to create nodes of different
-     * types.
-     */
-    public static function createNodeObject(
-        $data,
-        ?self $ownerDocument = null,
-        ?string $jsonPtr = null,
-        ?UriInterface $baseUri = null
-    ): self {
-        return new self($data, $ownerDocument, $jsonPtr, $baseUri);
-    }
-
-    /**
      * @brief Construct from object or iterable, creating a public property
      * for each key
+     *
+     * @param $data If JsonNode, make a shallow copy of all its public
+     * properties. Otherwise use createNode() to build a JSON tree
+     * recursively.
      */
     public function __construct(
         $data,
@@ -60,12 +49,20 @@ class JsonNode
 
         $this->baseUri_ = $baseUri ?? $ownerDocument->baseUri_ ?? null;
 
-        foreach ($data as $subKey => $value) {
-            $this->$subKey = $this->createNode(
-                ($this->jsonPtr_ == '/' ? '/' : $this->jsonPtr_ . '/')
-                . str_replace([ '~', '/' ], [ '~0', '~1' ], $subKey),
-                $value
-            );
+        if ($data instanceof self) {
+            foreach ((array)$data as $key => $value) {
+                if ($key[0] != "\0") {
+                    $this->$key = $value;
+                }
+            }
+        } else {
+            foreach ($data as $subKey => $value) {
+                $this->$subKey = $this->createNode(
+                    ($this->jsonPtr_ == '/' ? '/' : $this->jsonPtr_ . '/')
+                    . str_replace([ '~', '/' ], [ '~0', '~1' ], $subKey),
+                    $value
+                );
+            }
         }
     }
 
@@ -158,11 +155,9 @@ class JsonNode
                 return $result;
 
             case is_object($value) || is_array($value):
-                return $this::createNodeObject(
-                    $value,
-                    $this->ownerDocument_,
-                    $jsonPtr
-                );
+                $class = $this->ownerDocument_->getExpectedNodeClass($jsonPtr);
+
+                return new $class($value, $this->ownerDocument_, $jsonPtr);
 
             default:
                 return $value;
@@ -174,24 +169,36 @@ class JsonNode
      *
      * @param $jsonPtr JSON pointer pointing to the new node
      *
-     * @param $flags 0 or @ref CLONE_UPON_IMPORT
+     * @param $flags 0 or @ref COPY_UPON_IMPORT
      *
      * @warning This method modifies $node. To import a copy, pass a clone.
      *
      * @note This method does not insert the node into the tree. It only
      * prepares it so that it can then be inserted into the right place.
+     *
+     * Even though the only member of `$this` used in this method is @ref
+     * $ownerDocument_, this method is implemented in JsonNode and not in
+     * JsonDocumentTrait in order to have write access to $node's @ref
+     * $ownerDocument_ and @ref $jsonPtr_.
      */
     public function importObjectNode(
         JsonNode $node,
         string $jsonPtr,
         ?int $flags = null
     ): self {
-        if ($flags & self::CLONE_UPON_IMPORT) {
-            $node = clone $node;
-        }
+        if ($flags & self::COPY_UPON_IMPORT) {
+            $class = $this->ownerDocument_->getExpectedNodeClass($jsonPtr);
 
-        $node->ownerDocument_ = $this->ownerDocument_;
-        $node->jsonPtr_ = $jsonPtr;
+            $node = new $class(
+                $node,
+                $this->ownerDocument_,
+                $jsonPtr,
+                $node->baseUri_
+            );
+        } else {
+            $node->ownerDocument_ = $this->ownerDocument_;
+            $node->jsonPtr_ = $jsonPtr;
+        }
 
         $walker = new RecursiveWalker(
             $node,
@@ -200,13 +207,21 @@ class JsonNode
         );
 
         foreach ($walker as $jsonPtr => $subNode) {
-            if ($flags & self::CLONE_UPON_IMPORT) {
-                $subNode = clone $subNode;
-                $walker->replaceCurrent($subNode);
-            }
+            if ($flags & self::COPY_UPON_IMPORT) {
+                $class = $this->ownerDocument_->getExpectedNodeClass($jsonPtr);
 
-            $subNode->ownerDocument_ = $this->ownerDocument_;
-            $subNode->jsonPtr_ = $jsonPtr;
+                $subNode = new $class(
+                    $subNode,
+                    $this->ownerDocument_,
+                    $jsonPtr,
+                    $subNode->baseUri_
+                );
+
+                $walker->replaceCurrent($subNode);
+            } else {
+                $subNode->ownerDocument_ = $this->ownerDocument_;
+                $subNode->jsonPtr_ = $jsonPtr;
+            }
         }
 
         return $node;
@@ -217,12 +232,16 @@ class JsonNode
      *
      * @param $jsonPtr JSON pointer pointing to the new node
      *
-     * @param $flags 0 or @ref CLONE_UPON_IMPORT
+     * @param $flags 0 or @ref COPY_UPON_IMPORT
      *
      * @warning This method modifies $node. To import a copy, pass a clone.
      *
      * @note This method does not insert the node into the tree. It only
      * prepares it so that it can then be inserted into the right place.
+     *
+     * Even though the only part of `$this` used in this method is @ref
+     * $ownerDocument_, this method is implemented in JsonNode in order to
+     * have write access to $node's @ref $ownerDocument_ and @ref $jsonPtr_.
      */
     public function importArrayNode(
         array $node,
@@ -236,13 +255,21 @@ class JsonNode
         );
 
         foreach ($walker as $jsonPtrFragment => $subNode) {
-            if ($flags & self::CLONE_UPON_IMPORT) {
-                $subNode = clone $subNode;
-                $walker->replaceCurrent($subNode);
-            }
+            if ($flags & self::COPY_UPON_IMPORT) {
+                $class = $this->ownerDocument_->getExpectedNodeClass($jsonPtr);
 
-            $subNode->ownerDocument_ = $this->ownerDocument_;
-            $subNode->jsonPtr_ = "$jsonPtr/$jsonPtrFragment";
+                $subNode = new $class(
+                    $subNode,
+                    $this->ownerDocument_,
+                    "$jsonPtr/$jsonPtrFragment",
+                    $subNode->baseUri_
+                );
+
+                $walker->replaceCurrent($subNode);
+            } else {
+                $subNode->ownerDocument_ = $this->ownerDocument_;
+                $subNode->jsonPtr_ = "$jsonPtr/$jsonPtrFragment";
+            }
         }
 
         return $node;
@@ -255,6 +282,7 @@ class JsonNode
      */
     public function resolveReferences(
         int $flags = self::RESOLVE_ALL,
+        bool $mayReplaceNode = true,
         ?JsonDocumentFactory $factory = null
     ) {
         if (!isset($factory)) {
@@ -274,6 +302,11 @@ class JsonNode
                     case $ref[0] == '#' && $flags & self::RESOLVE_INTERNAL:
                         $newNode =
                             $result->ownerDocument_->getNode(substr($ref, 1));
+
+                        if ($newNode instanceof self) {
+                            $newNode = $newNode->createDeepCopy();
+                        }
+
                         break;
 
                     case $ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL:
@@ -299,7 +332,7 @@ class JsonNode
                 }
 
                 if ($newNode instanceof self) {
-                    $newNode = $newNode->resolveReferences($flags);
+                    $newNode = $newNode->resolveReferences($flags, false);
                 } elseif (is_array($newNode)) {
                     $newNode =
                         $this->resolveReferencesInArray($newNode, $flags);
@@ -309,19 +342,23 @@ class JsonNode
                     $newNode = $result->importObjectNode(
                         $newNode,
                         $jsonPtr,
-                        self::CLONE_UPON_IMPORT
+                        self::COPY_UPON_IMPORT
                     );
                 } elseif (is_array($newNode)) {
                     $newNode = $result->importArrayNode(
                         $newNode,
                         $jsonPtr,
-                        self::CLONE_UPON_IMPORT
+                        self::COPY_UPON_IMPORT
                     );
                 }
 
                 $walker->replaceCurrent($newNode);
                 $walker->skipChildren();
             }
+        }
+
+        if ($mayReplaceNode && $result !== $this) {
+            $this->ownerDocument_->setNode($this->jsonPtr_, $result);
         }
 
         return $result;

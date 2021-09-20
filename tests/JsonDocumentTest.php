@@ -76,4 +76,26 @@ class JsonDocumentTest extends TestCase
             [ $jsonDoc, '/bar/baz/qux/6/0/2/QUUX/Corge', 'sadipscing elitr' ]
         ];
     }
+
+    public function testGetNodeWrite()
+    {
+        $factory = new JsonDocumentFactory();
+
+        $jsonDoc = $factory->createFromUrl(
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+        );
+
+        $jsonDoc->setNode('/foo/~1/~0~1', 43);
+
+        $this->assertSame(43, $jsonDoc->foo->{'/'}->{'~/'});
+
+        $jsonDoc->setNode('/bar/baz/qux/0', 'sed diam nonumy');
+
+        $this->assertSame('sed diam nonumy', $jsonDoc->bar->baz->qux[0]);
+
+        $jsonDoc->setNode('/bar/baz/qux/6/0/2/QUUX/Corge', true);
+
+        $this->assertSame(true, $jsonDoc->bar->baz->qux[6][0][2]->QUUX->Corge);
+    }
 }

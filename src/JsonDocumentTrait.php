@@ -41,6 +41,41 @@ trait JsonDocumentTrait
         return $current;
     }
 
+    /// Set JSON node identified by JSON pointer to new node
+    public function setNode(string $jsonPtr, $newNode): void
+    {
+        if ($jsonPtr[0] != '/') {
+            /** @throw alcamo::exception::SyntaxError if $jsonPtr does not
+             *  start with a slash. */
+            throw new SyntaxError($jsonPtr, 0, '; not a valid JSON pointer');
+        }
+
+        $current = new ReferenceContainer($this);
+
+        for (
+            $refToken = strtok($jsonPtr, '/');
+            $refToken !== false;
+            $refToken = strtok('/')
+        ) {
+            if ($current->value instanceof JsonNode) {
+                $refToken =
+                    str_replace([ '~1', '~0' ], [ '/', '~' ], $refToken);
+
+                $current = new ReferenceContainer($current->value->$refToken);
+            } else {
+                $current = new ReferenceContainer($current->value[$refToken]);
+            }
+        }
+
+        $current->value = $newNode;
+    }
+
+    /// Get class that should be used to create a node
+    public function getExpectedNodeClass(string $jsonPtr): string
+    {
+        return JsonNode::class;
+    }
+
     /// Check the internal structure, for debugging only
     public function checkStructure(): void
     {
