@@ -243,12 +243,15 @@ class JsonNodeTest extends TestCase
     // replace a document node by another document node
     public function testResolveExternal1()
     {
+        $barUri = 'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::BAR_FILENAME);
+
+        $bazUri = 'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::BAZ_FILENAME);
+
         $factory = new JsonDocumentFactory();
 
-        $jsonDoc = $factory->createFromUrl(
-            'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::BAZ_FILENAME)
-        );
+        $jsonDoc = $factory->createFromUrl($bazUri);
 
         $jsonDoc->checkStructure();
 
@@ -268,6 +271,8 @@ class JsonNodeTest extends TestCase
 
         $this->assertSame('#/defs/foo', $jsonDoc2->bar->foo->{'$ref'});
 
+        $this->assertSame($barUri, (string)$jsonDoc2->getBaseUri());
+
         $jsonDoc2 = $jsonDoc->createDeepCopy();
 
         $jsonDoc2 = $jsonDoc2->resolveReferences();
@@ -283,12 +288,15 @@ class JsonNodeTest extends TestCase
     // other internal/external replacements
     public function testResolveExternal2()
     {
+        $barUri = 'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::BAR_FILENAME);
+
+        $quxUri = 'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::QUX_FILENAME);
+
         $factory = new JsonDocumentFactory();
 
-        $jsonDoc = $factory->createFromUrl(
-            'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::QUX_FILENAME)
-        );
+        $jsonDoc = $factory->createFromUrl($quxUri);
 
         $jsonDoc->checkStructure();
 
@@ -311,5 +319,9 @@ class JsonNodeTest extends TestCase
 
         // replacement via multiple files
         $this->assertSame(null, $jsonDoc2->quux);
+
+        $this->assertSame($jsonDoc->getBaseUri(), $jsonDoc2->getBaseUri());
+
+        $this->assertSame($barUri, (string)$jsonDoc2->bar[1]->getBaseUri());
     }
 }
