@@ -34,10 +34,11 @@ class JsonNode
         ?self $parent = null,
         ?string $key = null,
         ?UriInterface $baseUri = null,
+        string $class = JsonDocument::class,
         ?int $depth = null,
-        ?int $flags = null
+        int $flags = JSON_THROW_ON_ERROR
     ): self {
-        return new static(
+        return new $class(
             json_decode($jsonText, false, $depth ?? 512, $flags ?? 0),
             $parent,
             $key,
@@ -49,14 +50,18 @@ class JsonNode
         $url,
         ?self $parent = null,
         ?string $key = null,
+        string $class = JsonDocument::class,
         ?int $depth = null,
-        ?int $flags = null
+        int $flags = JSON_THROW_ON_ERROR
     ): self {
         return static::newFromJsonText(
             file_get_contents($url),
             $parent,
             $key,
-            $url instanceof UriInterface ? $url : new Uri($url)
+            $url instanceof UriInterface ? $url : new Uri($url),
+            $class,
+            $depth,
+            $flags
         );
     }
 
@@ -231,8 +236,7 @@ class JsonNode
             | RecursiveWalker::OMIT_START_NODE
         );
 
-        foreach ($walker as $jsonPtr => $subNode
-        ) {
+        foreach ($walker as $jsonPtr => $subNode) {
             if ($flags & self::CLONE_UPON_IMPORT) {
                 $subNode = clone $subNode;
                 $walker->replaceCurrent($subNode);
@@ -262,19 +266,23 @@ class JsonNode
         string $jsonPtr,
         ?int $flags = null
     ): array {
-        $slashPos = strrpos($jsonPtr, '/');
-        $key = substr($jsonPtr, $slashPos + 1);
+        $walker = new RecursiveWalker(
+            $node,
+            RecursiveWalker::JSON_OBJECTS_ONLY
+            | RecursiveWalker::OMIT_START_NODE
+        );
 
-        $tmpNode = new self([]);
-        $tmpNode->$key = $node;
+        foreach ($walker as $jsonPtrFragment => $subNode) {
+            if ($flags & self::CLONE_UPON_IMPORT) {
+                $subNode = clone $subNode;
+                $walker->replaceCurrent($subNode);
+            }
 
-        return
-            $this->importObjectNode(
-                $tmpNode,
-                substr($jsonPtr, 0, $slashPos),
-                $flags
-            )
-            ->$key;
+            $subNode->ownerDocument_ = $this->ownerDocument_;
+            $subNode->jsonPtr_ = "$jsonPtr/$jsonPtrFragment";
+        }
+
+        return $node;
     }
 
     /**
@@ -290,72 +298,72 @@ class JsonNode
             new RecursiveWalker($result, RecursiveWalker::JSON_OBJECTS_ONLY);
 
         foreach ($walker as $jsonPtr => $node) {
-            /* A loop is necessary because the replacement of the current node
-             * could itself be a reference. */
-            while ($node instanceof self && isset($node->{'$ref'})) {
+            if ($node instanceof self && isset($node->{'$ref'})) {
                 $ref = $node->{'$ref'};
 
-                if ($ref[0] == '#' && $flags & self::RESOLVE_INTERNAL) {
-                    $node = $result->ownerDocument_->getNode(substr($ref, 1));
+                switch (true) {
+                    case $ref[0] == '#' && $flags & self::RESOLVE_INTERNAL:
+                        $newNode =
+                            $result->ownerDocument_->getNode(substr($ref, 1));
+                        break;
 
-                    /* Internal references are replaced by their target and do
-                     * not need to be resolvbed further here because they will
-                     * be reconsidered in the next iteration of the while loop
-                     * if they are objects, or the next iteration of the
-                     * foreach loop if they are arrays. */
+                    case $ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL:
+                        $url = new Uri($ref);
 
-                    if ($node instanceof self) {
-                        $node = $result->importObjectNode(
-                            $node,
-                            $jsonPtr,
-                            self::CLONE_UPON_IMPORT
-                        );
-                    } elseif (is_array($node)) {
-                        $node = $result->importArrayNode(
-                            $node,
-                            $jsonPtr,
-                            self::CLONE_UPON_IMPORT
-                        );
-                    }
-
-                    $walker->replaceCurrent($node);
-                } elseif ($ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL) {
-                    $url = new Uri($ref);
-
-                    $node = $url->getFragment() == ''
-                        ? self::newFromUrl($url)
-                        : (self::newFromUrl($url->withFragment(''))
-                            ->getNode($url->getFragment()));
-
-                    /* External references must be completely resolved before
-                     * import because they may contain internal references to
-                     * their document which become unavailabvle after
-                     * importing. */
-
-                    if ($node instanceof self) {
-                        $node = $node->resolveReferences($flags);
-
-                        if ($node instanceof self) {
-                            $node = $result->importObjectNode($node, $jsonPtr);
-                        } elseif (is_array($node)) {
-                            $node = $result->importArrayNode($node, $jsonPtr);
+                        if ($url->getFragment() == '') {
+                            $newNode = self::newFromUrl($url);
+                        } else {
+                            $newNode =
+                                self::newFromUrl($url->withFragment(''))
+                                ->getNode($url->getFragment());
                         }
+                        break;
 
-                        $walker->skipChildren();
-                    } elseif (is_array($node)) {
-                        $this->resolveReferencesInArray($node, $flags);
-
-                        $node = $result->importArrayNode($node, $jsonPtr);
-                    }
-
-                    $walker->replaceCurrent($node);
-                } else {
-                    // exit loop if ref cannot be replaced
-                    break;
+                    default:
+                        continue 2;
                 }
+
+                if ($newNode instanceof self) {
+                    $newNode = $newNode->resolveReferences($flags);
+                } elseif (is_array($newNode)) {
+                    $newNode =
+                        $this->resolveReferencesInArray($newNode, $flags);
+                }
+
+                if ($newNode instanceof self) {
+                    $newNode = $result->importObjectNode(
+                        $newNode,
+                        $jsonPtr,
+                        self::CLONE_UPON_IMPORT
+                    );
+                } elseif (is_array($newNode)) {
+                    $newNode = $result->importArrayNode(
+                        $newNode,
+                        $jsonPtr,
+                        self::CLONE_UPON_IMPORT
+                    );
+                }
+
+                $walker->replaceCurrent($newNode);
+                $walker->skipChildren();
             }
         }
 
         return $result;
+    }
+
+    private function resolveReferencesInArray(
+        array $node,
+        int $flags = self::RESOLVE_ALL
+    ) {
+        $walker =
+            new RecursiveWalker($node, RecursiveWalker::JSON_OBJECTS_ONLY);
+
+        foreach ($walker as $subNode) {
+            $walker->replaceCurrent($subNode->resolveReferences($flags));
+            $walker->skipChildren();
+        }
+
+        return $node;
     }
 }

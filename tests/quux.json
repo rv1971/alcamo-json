@@ -1,0 +1,6 @@
+{
+    "foo": { "$ref": "#/bar" },
+    "bar": { "$ref": "#/baz" },
+    "baz": { "$ref": "#/qux" },
+    "qux": { "$ref": "bar.json#/bar/bar/3" }
+}

@@ -10,6 +10,7 @@ class JsonNodeTest extends TestCase
     public const BAR_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'bar.json';
     public const BAZ_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'baz.json';
     public const QUX_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'qux.json';
+    public const QUUX_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'quux.json';
 
     /**
      * @dataProvider getJsonPtrProvider
@@ -266,8 +267,6 @@ class JsonNodeTest extends TestCase
 
         $jsonDoc2 = $jsonDoc2->resolveReferences();
 
-        echo json_encode($jsonDoc2, JSON_PRETTY_PRINT);
-
         $this->assertNotEquals($jsonDoc, $jsonDoc2);
 
         // check that all references have been replaced
@@ -280,5 +279,8 @@ class JsonNodeTest extends TestCase
         // to an array
         $this->assertSame(42, $jsonDoc2->bar[0]);
         $this->assertSame(true, $jsonDoc2->bar[1]->qux2);
+
+        // replacement via multiple files
+        $this->assertSame(null, $jsonDoc2->quux);
     }
 }
