@@ -138,10 +138,13 @@ class RecursiveWalker implements \Iterator
      */
     public function replaceCurrent($value): void
     {
+        $nodeValue =
+            is_array($value) ? new ReferenceContainer($value) : $value;
+
         if ($this->startNode_ instanceof JsonNode) {
             if($this->currentNode_ === $this->startNode_) {
                 $this->startNode_ = $value;
-                $this->currentNode_ = $value;
+                $this->currentNode_ = $nodeValue;
                 return;
             }
         } elseif ($this->currentKey_ == '') {
@@ -150,7 +153,7 @@ class RecursiveWalker implements \Iterator
             }
 
             $this->startNode_ =  $value;
-            $this->currentNode_ = $value;
+            $this->currentNode_ = $nodeValue;
             return;
         }
 
@@ -162,7 +165,7 @@ class RecursiveWalker implements \Iterator
             $this->currentParent_->value[$key] = $value;
         }
 
-        $this->currentNode_ = $value;
+        $this->currentNode_ = $nodeValue;
     }
 
     /// next() implementation proceeding to the next node, if any

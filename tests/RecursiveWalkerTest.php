@@ -337,6 +337,37 @@ class RecursiveWalkerTest extends TestCase
         $walker->replaceCurrent($jsonDoc2->foo);
 
         $this->assertSame(42, $jsonDoc2->{'/'}->{'~/'});
+
+        // replace by array
+        $jsonDoc2 = $jsonDoc->createDeepCopy();
+
+        $walker = new RecursiveWalker($jsonDoc2);
+
+        $walker->next();
+
+        $walker->replaceCurrent($jsonDoc2->bar->baz->qux[6]);
+
+        $walker->next();
+        $walker->next();
+
+        $this->assertSame(43, $walker->current());
+
+        // replace start node by array
+        $jsonDoc2 = $jsonDoc->createDeepCopy();
+
+        $walker = new RecursiveWalker($jsonDoc2->foo->{'/'});
+
+        $walker->replaceCurrent($jsonDoc2->bar->baz->qux[6]);
+
+        $walker->next();
+        $walker->next();
+
+        $this->assertSame(43, $walker->current());
+
+        // replace again the same node
+        $walker->replaceCurrent($jsonDoc2->bar->baz->qux[6][0][2]->QUUX);
+
+        $this->assertSame(true, $walker->current()->CORGE);
     }
 
     // replaceCurrent() when start node is an array
