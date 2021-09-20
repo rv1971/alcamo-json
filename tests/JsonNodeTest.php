@@ -23,8 +23,6 @@ class JsonNodeTest extends TestCase
         $this->assertSame($expectedBaseUri, (string)$node->getBaseUri());
 
         $this->assertSame($expectedJsonPtr, $node->getJsonPtr());
-
-        $this->assertSame($expectedKey, $node->getKey());
     }
 
     public function getJsonPtrProvider()

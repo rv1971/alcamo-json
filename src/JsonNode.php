@@ -33,9 +33,18 @@ class JsonNode
      * @brief Construct from object or iterable, creating a public property
      * for each key
      *
-     * @param $data If JsonNode, make a shallow copy of all its public
-     * properties. Otherwise use createNode() to build a JSON tree
-     * recursively.
+     * @param $ownerDocument Document this node belongs to. If unset, the node
+     * is considered to be itself its owner document.
+     *
+     * @param $jsonPtr JSON pointer to this node. If unset, the node is
+     * assumed to be the root node.
+     *
+     * @param $data If JsonNode, a shallow copy of all its public properties
+     * is created. (Use createDeepCopy() beforehand if you need a deep copy.)
+     * Otherwise use createNode() to build a JSON tree recursively.
+     *
+     * @param $baseUri URI used to to resolve any relative URIs in the
+     * document.
      */
     public function __construct(
         $data,
@@ -66,15 +75,47 @@ class JsonNode
         }
     }
 
+    /// Call toJsonText()
     public function __toString(): string
     {
         return $this->toJsonText();
+    }
+
+    /**
+     * @brief Get the document (i.e. the ultimate parent) this node belongs to
+     *
+     * The owner document does not need to be of a specific document type. It
+     * can be a JsonNode or any class derived from it.
+     */
+    public function getOwnerDocument(): self
+    {
+        return $this->ownerDocument_;
+    }
+
+    /// JSON pointer identifying the present node
+    public function getJsonPtr(): string
+    {
+        return $this->jsonPtr_;
+    }
+
+    /// Base URI, if specified
+    public function getBaseUri(): ?UriInterface
+    {
+        return $this->baseUri_;
+    }
+
+    public function toJsonText(?int $flags = null, ?int $depth = null): string
+    {
+        return json_encode($this, $flags ?? 0, $depth ?? 512);
     }
 
     public function createDeepCopy(): self
     {
         $node = clone $this;
 
+        /** If getJsonPtr() is `/`, the copy is its own owner
+         *  document. Otherwise it belongs to the same document as the
+         *  original node. */
         if ($node->jsonPtr_ == '/') {
             $node->ownerDocument_ = $node;
         }
@@ -95,42 +136,6 @@ class JsonNode
     }
 
     /**
-     * @brief Get the document (i.e. the ultimate parent) this node belongs to
-     *
-     * The owner document does not need to be of a specific document type. It
-     * can be a JsonNode or any class derived from it.
-     */
-    public function getOwnerDocument(): self
-    {
-        return $this->ownerDocument_;
-    }
-
-    /// JSON pointer identifying the present node
-    public function getJsonPtr(): string
-    {
-        return $this->jsonPtr_;
-    }
-
-    /// Key of this node in the parent node, or null if this is the root
-    public function getKey(): ?string
-    {
-        return $this->jsonPtr_ == '/'
-            ? null
-            : substr($this->jsonPtr_, strrpos($this->jsonPtr_, '/') + 1);
-    }
-
-    /// Base URI, if specified
-    public function getBaseUri(): ?UriInterface
-    {
-        return $this->baseUri_;
-    }
-
-    public function toJsonText(?int $flags = null, ?int $depth = null): string
-    {
-        return json_encode($this, $flags ?? 0, $depth ?? 512);
-    }
-
-    /**
      * @brief Create a JSON node
      * - If $value is a nonempty numerically-indexed array, create an array.
      * - Else, if $value is an object or associative array, call createNode()
@@ -139,7 +144,7 @@ class JsonNode
      *
      * @sa [How to check if PHP array is associative or sequential?](https://stackoverflow.com/questions/173400/how-to-check-if-php-array-is-associative-or-sequential)
      */
-    public function createNode($jsonPtr, $value)
+    public function createNode(string $jsonPtr, $value)
     {
         switch (true) {
             case is_array($value)
