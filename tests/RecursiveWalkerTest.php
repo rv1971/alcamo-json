@@ -30,7 +30,7 @@ class RecursiveWalkerTest extends TestCase
 
     public function walkerProvider()
     {
-        $factory = new JsonNodeFactory();
+        $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromJsonText(
             file_get_contents(self::FOO_FILENAME)
@@ -240,7 +240,7 @@ class RecursiveWalkerTest extends TestCase
 
     public function testSkipChildren()
     {
-        $factory = new JsonNodeFactory();
+        $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromJsonText(
             file_get_contents(self::FOO_FILENAME)
@@ -280,7 +280,7 @@ class RecursiveWalkerTest extends TestCase
     // replaceCurrent() when start node is a JsonNode
     public function testReplaceCurrent1()
     {
-        $factory = new JsonNodeFactory();
+        $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromJsonText(
             file_get_contents(self::FOO_FILENAME)
@@ -379,7 +379,7 @@ class RecursiveWalkerTest extends TestCase
     // replaceCurrent() when start node is an array
     public function testReplaceCurrent2()
     {
-        $factory = new JsonNodeFactory();
+        $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromJsonText(
             file_get_contents(self::FOO_FILENAME)

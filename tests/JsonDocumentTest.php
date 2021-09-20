@@ -10,7 +10,7 @@ class JsonDocumentTest extends TestCase
 
     public function testConstruct()
     {
-        $factory = new JsonNodeFactory();
+        $factory = new JsonDocumentFactory();
         $jsonText = file_get_contents(self::FOO_FILENAME);
 
         $jsonDoc = $factory->createFromJsonText($jsonText);
@@ -50,7 +50,7 @@ class JsonDocumentTest extends TestCase
 
     public function getNodeProvider()
     {
-        $factory = new JsonNodeFactory();
+        $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
             'file://'

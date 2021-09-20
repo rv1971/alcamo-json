@@ -255,10 +255,10 @@ class JsonNode
      */
     public function resolveReferences(
         int $flags = self::RESOLVE_ALL,
-        ?JsonNodeFactory $factory = null
+        ?JsonDocumentFactory $factory = null
     ) {
         if (!isset($factory)) {
-            $factory = new JsonNodeFactory();
+            $factory = new JsonDocumentFactory();
         }
 
         $result = $this;

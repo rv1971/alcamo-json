@@ -29,7 +29,7 @@ class JsonNodeTest extends TestCase
 
     public function getJsonPtrProvider()
     {
-        $factory = new JsonNodeFactory();
+        $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
             'file://'
@@ -57,7 +57,7 @@ class JsonNodeTest extends TestCase
 
     public function testClone()
     {
-        $factory = new JsonNodeFactory();
+        $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
             'file://'
@@ -100,7 +100,7 @@ class JsonNodeTest extends TestCase
 
     public function testImportObjectNode()
     {
-        $factory = new JsonNodeFactory();
+        $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
             'file://'
@@ -134,7 +134,7 @@ class JsonNodeTest extends TestCase
 
     public function testImportArrayNode()
     {
-        $factory = new JsonNodeFactory();
+        $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
             'file://'
@@ -171,7 +171,7 @@ class JsonNodeTest extends TestCase
 
     public function testResolveInternal()
     {
-        $factory = new JsonNodeFactory();
+        $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
             'file://'
@@ -228,7 +228,7 @@ class JsonNodeTest extends TestCase
     // replace a document node by another document node
     public function testResolveExternal1()
     {
-        $factory = new JsonNodeFactory();
+        $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
             'file://'
@@ -268,7 +268,7 @@ class JsonNodeTest extends TestCase
     // other internal external replacements
     public function testResolveExternal2()
     {
-        $factory = new JsonNodeFactory();
+        $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
             'file://'
