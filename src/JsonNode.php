@@ -30,30 +30,40 @@ class JsonNode
     private $baseUri_;         ///< ?UriInterface
 
     /**
+     * @brief Create a JSON node
+     *
+     * This can be overridden in derived classes to create nodes of different
+     * types.
+     */
+    public static function createNodeObject(
+        $data,
+        ?self $ownerDocument = null,
+        ?string $jsonPtr = null,
+        ?UriInterface $baseUri = null
+    ): self {
+        return new self($data, $ownerDocument, $jsonPtr, $baseUri);
+    }
+
+    /**
      * @brief Construct from object or iterable, creating a public property
      * for each key
      */
     public function __construct(
         $data,
-        ?self $parent = null,
-        ?string $key = null,
+        ?self $ownerDocument = null,
+        ?string $jsonPtr = null,
         ?UriInterface $baseUri = null
     ) {
-        $this->ownerDocument_ = $parent->ownerDocument_ ?? $this;
+        $this->ownerDocument_ = $ownerDocument ?? $this;
 
-        if (isset($parent)) {
-            $this->jsonPtr_ = $parent->jsonPtr_ == '/'
-                ? "/$key"
-                : "$parent->jsonPtr_/$key";
-        } else {
-            $this->jsonPtr_ = '/';
-        }
+        $this->jsonPtr_ = $jsonPtr ?? '/';
 
-        $this->baseUri_ = $baseUri ?? $parent->baseUri_ ?? null;
+        $this->baseUri_ = $baseUri ?? $ownerDocument->baseUri_ ?? null;
 
         foreach ($data as $subKey => $value) {
             $this->$subKey = $this->createNode(
-                str_replace([ '~', '/' ], [ '~0', '~1' ], $subKey),
+                ($this->jsonPtr_ == '/' ? '/' : $this->jsonPtr_ . '/')
+                . str_replace([ '~', '/' ], [ '~0', '~1' ], $subKey),
                 $value
             );
         }
@@ -132,7 +142,7 @@ class JsonNode
      *
      * @sa [How to check if PHP array is associative or sequential?](https://stackoverflow.com/questions/173400/how-to-check-if-php-array-is-associative-or-sequential)
      */
-    public function createNode($key, $value)
+    public function createNode($jsonPtr, $value)
     {
         switch (true) {
             case is_array($value)
@@ -142,32 +152,21 @@ class JsonNode
 
                 foreach ($value as $subKey => $subValue) {
                     $result[] =
-                        $this->createNode("$key/$subKey", $subValue);
+                        $this->createNode("$jsonPtr/$subKey", $subValue);
                 }
 
                 return $result;
 
             case is_object($value) || is_array($value):
-                return $this->createNodeObject($value, $this, $key);
+                return $this::createNodeObject(
+                    $value,
+                    $this->ownerDocument_,
+                    $jsonPtr
+                );
 
             default:
                 return $value;
         }
-    }
-
-    /**
-     * @brief Create a JSON node
-     *
-     * This can be overridden in derived classes to create nodes of different
-     * types.
-     */
-    public function createNodeObject(
-        $data,
-        ?self $parent = null,
-        ?string $key = null,
-        ?UriInterface $baseUri = null
-    ): self {
-        return new self($data, $parent, $key, $baseUri);
     }
 
     /**
@@ -280,11 +279,17 @@ class JsonNode
                     case $ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL:
                         $url = new Uri($ref);
 
+                        /* The new documents must not be created in their
+                         * final place, because then it might be impossible to
+                         * resolve references inside them. Sothey must first
+                         * be created as standalone documents and later be
+                         * imported into their final place. */
+
                         if ($url->getFragment() == '') {
                             $newNode = $factory->createFromUrl($url);
                         } else {
-                            $newNode =
-                                $factory->createFromUrl($url->withFragment(''))
+                            $newNode = $factory
+                                ->createFromUrl($url->withFragment(''))
                                 ->getNode($url->getFragment());
                         }
                         break;

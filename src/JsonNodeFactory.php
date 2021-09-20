@@ -21,29 +21,29 @@ class JsonNodeFactory
 
     public function createFromJsonText(
         string $jsonText,
-        ?self $parent = null,
-        ?string $key = null,
+        ?JsonNode $ownerDocument = null,
+        ?string $jsonPtr = null,
         string $class = JsonDocument::class,
         ?UriInterface $baseUri = null
     ): JsonNode {
         return new $class(
             json_decode($jsonText, false, $this->depth_, $this->flags_),
-            $parent,
-            $key,
+            $ownerDocument,
+            $jsonPtr,
             $baseUri
         );
     }
 
     public function createFromUrl(
         $url,
-        ?self $parent = null,
-        ?string $key = null,
+        ?JsonNode $ownerDocument = null,
+        ?string $jsonPtr = null,
         string $class = JsonDocument::class
     ): JsonNode {
         return static::createFromJsonText(
             file_get_contents($url),
-            $parent,
-            $key,
+            $ownerDocument,
+            $jsonPtr,
             $class,
             $url instanceof UriInterface ? $url : new Uri($url)
         );
