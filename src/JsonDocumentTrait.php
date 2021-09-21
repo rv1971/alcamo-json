@@ -81,37 +81,4 @@ trait JsonDocumentTrait
     {
         return JsonNode::class;
     }
-
-    /// Check the internal structure, for debugging only
-    public function checkStructure(): void
-    {
-        foreach (
-            new RecursiveWalker(
-                $this,
-                RecursiveWalker::JSON_OBJECTS_ONLY
-            ) as $jsonPtr => $node
-        ) {
-            if ($node->getOwnerDocument() !== $this) {
-                /** @throw alcamo::exception::DataValidationFailed if node
-                 *  has a wrong owner document. */
-                throw new DataValidationFailed(
-                    $node,
-                    "{$this->getBaseUri()}#$jsonPtr",
-                    null,
-                    "; \$ownerDocument_ differs from document owning this node"
-                );
-            }
-
-            if ($node->getJsonPtr() !== $jsonPtr) {
-                /** @throw alcamo::exception::DataValidationFailed if node
-                 *  has a wrong JSOn pointer. */
-                throw new DataValidationFailed(
-                    $node,
-                    "{$this->getBaseUri()}#$jsonPtr",
-                    null,
-                    "; \$jsonPtr_=\"{$node->getJsonPtr()}\" differs from actual position \"$jsonPtr\""
-                );
-            }
-        }
-    }
 }

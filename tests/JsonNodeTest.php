@@ -19,6 +19,38 @@ class JsonNodeTest extends TestCase
         . 'quux' . DIRECTORY_SEPARATOR
         . 'quux.json';
 
+    public static function checkStructure(JsonDocument $doc): void
+    {
+        foreach (
+            new RecursiveWalker(
+                $doc,
+                RecursiveWalker::JSON_OBJECTS_ONLY
+            ) as $jsonPtr => $node
+        ) {
+            if ($node->getOwnerDocument() !== $doc) {
+                /** @throw alcamo::exception::DataValidationFailed if node
+                 *  has a wrong owner document. */
+                throw new DataValidationFailed(
+                    $node,
+                    "{$doc->getBaseUri()}#$jsonPtr",
+                    null,
+                    "; \$ownerDocument_ differs from document owning this node"
+                );
+            }
+
+            if ($node->getJsonPtr() !== $jsonPtr) {
+                /** @throw alcamo::exception::DataValidationFailed if node
+                 *  has a wrong JSOn pointer. */
+                throw new DataValidationFailed(
+                    $node,
+                    "{$doc->getBaseUri()}#$jsonPtr",
+                    null,
+                    "; \$jsonPtr_=\"{$node->getJsonPtr()}\" differs from actual position \"$jsonPtr\""
+                );
+            }
+        }
+    }
+
     /**
      * @dataProvider getJsonPtrProvider
      */
@@ -41,7 +73,7 @@ class JsonNodeTest extends TestCase
             . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
         );
 
-        $jsonDoc->checkStructure();
+        self::checkStructure($jsonDoc);
 
         $qux = $jsonDoc->bar->baz->qux;
 
@@ -87,7 +119,7 @@ class JsonNodeTest extends TestCase
 
         $jsonDoc2 = $jsonDoc->createDeepCopy();
 
-        $jsonDoc2->checkStructure();
+        self::checkStructure($jsonDoc2);
 
         $this->assertEquals($jsonDoc->bar, $jsonDoc2->bar);
         $this->assertNotSame($jsonDoc->bar, $jsonDoc2->bar);
@@ -127,7 +159,7 @@ class JsonNodeTest extends TestCase
                 JsonNode::COPY_UPON_IMPORT
             );
 
-        $jsonDoc->checkStructure();
+        self::checkStructure($jsonDoc);
 
         $this->assertSame((string)$jsonDoc->foo, (string)$jsonDoc->bar->foo);
 
@@ -164,7 +196,7 @@ class JsonNodeTest extends TestCase
             JsonNode::COPY_UPON_IMPORT
         );
 
-        $jsonDoc->checkStructure();
+        self::checkStructure($jsonDoc);
 
         $this->assertSame(43, $jsonDoc->foo[0][0]);
 
@@ -183,24 +215,24 @@ class JsonNodeTest extends TestCase
             . str_replace(DIRECTORY_SEPARATOR, '/', self::BAR_FILENAME)
         );
 
-        $jsonDoc->checkStructure();
+        self::checkStructure($jsonDoc);
 
         $jsonDoc2 = $jsonDoc->createDeepCopy();
 
-        $jsonDoc2->checkStructure();
+        self::checkStructure($jsonDoc2);
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
 
         // does nothing, bar.json has no external references
         $jsonDoc2 = $jsonDoc2->resolveReferences(JsonNode::RESOLVE_EXTERNAL);
 
-        $jsonDoc2->checkStructure();
+        self::checkStructure($jsonDoc2);
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
 
         $jsonDoc2 = $jsonDoc2->resolveReferences();
 
-        $jsonDoc2->checkStructure();
+        self::checkStructure($jsonDoc2);
 
         $this->assertNotEquals($jsonDoc, $jsonDoc2);
 
@@ -253,7 +285,7 @@ class JsonNodeTest extends TestCase
 
         $jsonDoc = $factory->createFromUrl($bazUri);
 
-        $jsonDoc->checkStructure();
+        self::checkStructure($jsonDoc);
 
         $jsonDoc2 = $jsonDoc->createDeepCopy();
 
@@ -261,7 +293,7 @@ class JsonNodeTest extends TestCase
 
         $jsonDoc2 = $jsonDoc2->resolveReferences(JsonNode::RESOLVE_INTERNAL);
 
-        $jsonDoc2->checkStructure();
+        self::checkStructure($jsonDoc2);
 
         $this->assertEquals($jsonDoc, $jsonDoc2);
 
@@ -298,7 +330,7 @@ class JsonNodeTest extends TestCase
 
         $jsonDoc = $factory->createFromUrl($quxUri);
 
-        $jsonDoc->checkStructure();
+        self::checkStructure($jsonDoc);
 
         $jsonDoc2 = $jsonDoc->createDeepCopy();
 

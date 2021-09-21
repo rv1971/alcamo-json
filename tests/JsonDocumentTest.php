@@ -37,8 +37,6 @@ class JsonDocumentTest extends TestCase
         );
 
         $this->assertNull($jsonDoc->getBaseUri());
-
-        $jsonDoc->checkStructure();
     }
 
     /**
