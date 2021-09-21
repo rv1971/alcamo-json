@@ -2,7 +2,7 @@
 
 namespace alcamo\json;
 
-use alcamo\exception\{DataValidationFailed, SyntaxError};
+use alcamo\exception\{DataValidationFailed, SyntaxError, Unsupported};
 
 /**
  * @brief JSON document trait
@@ -48,6 +48,12 @@ trait JsonDocumentTrait
             /** @throw alcamo::exception::SyntaxError if $jsonPtr does not
              *  start with a slash. */
             throw new SyntaxError($jsonPtr, 0, '; not a valid JSON pointer');
+        }
+
+        if ($jsonPtr == '/') {
+            /** @throw alcamo::exception::Unsupported when attempting to
+             *  replace the root node. */
+            throw new Unsupported('"/"', '; root node cannot be replaced');
         }
 
         $current = new ReferenceContainer($this);

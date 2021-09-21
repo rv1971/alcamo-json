@@ -3,6 +3,7 @@
 namespace alcamo\json;
 
 use PHPUnit\Framework\TestCase;
+use alcamo\exception\{DataValidationFailed, SyntaxError, Unsupported};
 
 class JsonDocumentTest extends TestCase
 {
@@ -97,5 +98,39 @@ class JsonDocumentTest extends TestCase
         $jsonDoc->setNode('/bar/baz/qux/6/0/2/QUUX/Corge', true);
 
         $this->assertSame(true, $jsonDoc->bar->baz->qux[6][0][2]->QUUX->Corge);
+    }
+
+    public function testException1()
+    {
+        $factory = new JsonDocumentFactory();
+
+        $jsonDoc = $factory->createFromUrl(
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+        );
+
+        $this->expectException(SyntaxError::class);
+        $this->expectExceptionMessage(
+            'Syntax error in "foo" at 0: "foo"; not a valid JSON pointer'
+        );
+
+        $jsonDoc->getNode('foo');
+    }
+
+    public function testException2()
+    {
+        $factory = new JsonDocumentFactory();
+
+        $jsonDoc = $factory->createFromUrl(
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+        );
+
+        $this->expectException(Unsupported::class);
+        $this->expectExceptionMessage(
+            '"/" not supported; root node cannot be replaced'
+        );
+
+        $jsonDoc->setNode('/', 'foo');
     }
 }

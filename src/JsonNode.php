@@ -366,7 +366,7 @@ class JsonNode
             }
         }
 
-        if ($mayReplaceNode && $result !== $this) {
+        if ($mayReplaceNode && $result !== $this && $this->jsonPtr_ != '/') {
             $this->ownerDocument_->setNode($this->jsonPtr_, $result);
         }
 
