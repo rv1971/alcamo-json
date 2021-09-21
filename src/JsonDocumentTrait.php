@@ -2,13 +2,13 @@
 
 namespace alcamo\json;
 
-use alcamo\exception\{DataValidationFailed, SyntaxError, Unsupported};
+use alcamo\exception\{SyntaxError, Unsupported};
 
 /**
  * @brief JSON document trait
  *
  * Implemented as a trait so that new document classes can be implemented as
- * child classes of classes derived from JsonNode that use the present trait.
+ * descendent classes of JsonNode and use the present trait.
  */
 trait JsonDocumentTrait
 {

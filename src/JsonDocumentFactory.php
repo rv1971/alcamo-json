@@ -6,10 +6,11 @@ use alcamo\ietf\Uri;
 use Psr\Http\Message\UriInterface;
 
 /**
- * @brief Factory for JsonDocument objects
+ * @brief Factory for JsonDocument objects or parts thereof
  */
 class JsonDocumentFactory
 {
+    /// Class to use to create a document
     public const DOCUMENT_CLASS = JsonDocument::class;
 
     private $depth_; /// int
@@ -23,9 +24,13 @@ class JsonDocumentFactory
 
     public function createFromJsonText(
         string $jsonText,
-        ?UriInterface $baseUri = null
+        $baseUri = null
     ): JsonNode {
         $class = static::DOCUMENT_CLASS;
+
+        if (isset($baseUri) && !$baseUri instanceof UriInterface) {
+            $baseUri = new Uri($baseUri);
+        }
 
         return new $class(
             json_decode($jsonText, false, $this->depth_, $this->flags_),

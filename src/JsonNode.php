@@ -68,7 +68,7 @@ class JsonNode
         } else {
             foreach ($data as $subKey => $value) {
                 $this->$subKey = $this->createNode(
-                    ($this->jsonPtr_ == '/' ? '/' : $this->jsonPtr_ . '/')
+                    ($this->jsonPtr_ == '/' ? '/' : "$this->jsonPtr_/")
                     . str_replace([ '~', '/' ], [ '~0', '~1' ], $subKey),
                     $value
                 );
@@ -322,11 +322,11 @@ class JsonNode
                     break;
 
                 case $ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL:
-                    /* The new document must not be created in its final
-                     * place, because then it might be impossible to resolve
-                     * references inside it. So it must first be created as a
-                     * standalone document and later be imported into its
-                     * final place. */
+                    /* The new document must not be created in its final place
+                     * in the existing document, because then it might be
+                     * impossible to resolve references inside it. So it must
+                     * first be created as a standalone document and later be
+                     * imported. */
 
                     $newNode = $factory->createFromUrl(
                         UriResolver::resolve($node->baseUri_, new Uri($ref))
@@ -345,6 +345,8 @@ class JsonNode
                     $this->resolveReferencesInArray($newNode, $flags);
             }
 
+            /* COPY_UPON_IMPORT is necessary because the nodes might get a
+             * different PHP class upon copying. */
             if ($newNode instanceof self) {
                 $newNode = $result->importObjectNode(
                     $newNode,
@@ -378,7 +380,7 @@ class JsonNode
             new RecursiveWalker($node, RecursiveWalker::JSON_OBJECTS_ONLY);
 
         foreach ($walker as $subNode) {
-            $walker->replaceCurrent($subNode->resolveReferences($flags));
+            $walker->replaceCurrent($subNode->resolveReferences($flags, false));
             $walker->skipChildren();
         }
 

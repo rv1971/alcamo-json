@@ -13,11 +13,8 @@ class RecursiveWalker implements \Iterator
     private $startNode_; ///< any type
     private $flags_;     ///< int
 
-    protected $nextMethod_; ///< string
-
-    private $currentStack_;         ///< array
+    private $stack_;                ///< array
     private $currentParent_;        ///< JsonNode|ReferenceContainer
-    private $currentChildKey_;      ///< string
     private $currentGenerator_;     ///< Generator for items of $currentParent_
     private $currentParentPtr_;     ///< JSON pointer string
     private $skipChildren_ = false; ///< bool
@@ -35,12 +32,6 @@ class RecursiveWalker implements \Iterator
 
         $this->flags_ = (int)$flags;
 
-        if ($flags & self::JSON_OBJECTS_ONLY) {
-            $this->nextMethod_ = 'jsonObjectsOnlyNext';
-        } else {
-            $this->nextMethod_ = 'simpleNext';
-        }
-
         $this->rewind();
     }
 
@@ -55,8 +46,8 @@ class RecursiveWalker implements \Iterator
     /**
      * @brief Return JSON pointer to current node
      *
-     * If the start node is not a JSOn node, this is a fragment of a JSOn
-     * pointer.
+     * If the start node is not a JSON node, this is actually a fragment of a
+     * JSON pointer.
      */
     public function key(): string
     {
@@ -65,8 +56,11 @@ class RecursiveWalker implements \Iterator
 
     public function next(): void
     {
-        $method = $this->nextMethod_;
-        $this->$method();
+        if ($this->flags_ & self::JSON_OBJECTS_ONLY) {
+            $this->jsonObjectsOnlyNext();
+        } else {
+            $this->simpleNext();
+        }
     }
 
     public function rewind(): void
@@ -74,9 +68,9 @@ class RecursiveWalker implements \Iterator
         /* Model the start node as the only child of an artificial parent
          * array. This greatly simplies the implementation of next(). */
 
-        $parent = [ '' => $this->startNode_ ];
+        $parent = [ $this->startNode_ ];
 
-        $this->currentStack_ = [];
+        $this->stack_ = [];
         $this->currentParent_ = new ReferenceContainer($parent);
         $this->currentGenerator_ = $this->iterateArray($parent);
 
@@ -101,8 +95,8 @@ class RecursiveWalker implements \Iterator
 
     public function iterateArray(array &$data)
     {
-        /* To allow for concurrent iterators, do not iterate the array
-         * itself. */
+        /* Do not iterate the array itself in order to allow for concurrent
+         * iterators on the same array. */
         foreach (array_keys($data) as $key) {
             yield $key => is_array($data[$key])
                 ? new ReferenceContainer($data[$key])
@@ -117,12 +111,6 @@ class RecursiveWalker implements \Iterator
                 ? new ReferenceContainer($data->$key)
                 : $item;
         }
-    }
-
-    /// Key of current node within its parent
-    public function getCurrentChildKey(): string
-    {
-        return $this->currentChildKey_;
     }
 
     /// do not iterate children of current node
@@ -157,7 +145,7 @@ class RecursiveWalker implements \Iterator
             return;
         }
 
-        $key = $this->currentChildKey_;
+        $key = $this->currentGenerator_->key();
 
         if ($this->currentParent_ instanceof JsonNode) {
             $this->currentParent_->$key = $value;
@@ -191,7 +179,7 @@ class RecursiveWalker implements \Iterator
 
         // if current node has children, go down to first child
         if (isset($generator) && $generator->valid()) {
-            $this->currentStack_[] = [
+            $this->stack_[] = [
                 $this->currentParent_,
                 $this->currentGenerator_,
                 $this->currentParentPtr_
@@ -201,20 +189,20 @@ class RecursiveWalker implements \Iterator
             $this->currentGenerator_ = $generator;
             $this->currentParentPtr_ = $this->currentKey_;
         } else {
-            /// otherwise, go up until finding a level where there is a sibling
+            // otherwise, go up until finding a level where there is a sibling
             for (
                 $this->currentGenerator_->next();
-                $this->currentStack_ && !$this->currentGenerator_->valid();
+                $this->stack_ && !$this->currentGenerator_->valid();
                 $this->currentGenerator_->next()
             ) {
                 [
                     $this->currentParent_,
                     $this->currentGenerator_,
                     $this->currentParentPtr_
-                ] = array_pop($this->currentStack_);
+                ] = array_pop($this->stack_);
             }
 
-            /// exit iteration if no more siblings on any level
+            // exit iteration if no more siblings on any level
             if (!$this->currentGenerator_->valid()) {
                 // ensure that replaceCurrent() fails
                 $this->currentParent_ = null;
@@ -225,8 +213,6 @@ class RecursiveWalker implements \Iterator
             }
         }
 
-        $this->currentChildKey_ = $this->currentGenerator_->key();
-
         $this->currentKey_ =
             ($this->currentParentPtr_ == '/' || $this->currentParentPtr_ == ''
              ? $this->currentParentPtr_
@@ -234,13 +220,13 @@ class RecursiveWalker implements \Iterator
             . str_replace(
                 [ '~', '/' ],
                 [ '~0', '~1' ],
-                $this->currentChildKey_
+                $this->currentGenerator_->key()
             );
 
         $this->currentNode_ = $this->currentGenerator_->current();
     }
 
-    /// next() implementation procesding to the next JSON object, if any
+    /// next() implementation proceeding to the next JSON object, if any
     protected function jsonObjectsOnlyNext(): void
     {
         do {
