@@ -94,7 +94,7 @@ trait JsonDocumentTrait
     }
 
     /// Get class that should be used to create a node
-    public function getExpectedNodeClass(string $jsonPtr): string
+    public function getExpectedNodeClass(string $jsonPtr, $value): string
     {
         return JsonNode::class;
     }

@@ -161,7 +161,8 @@ class JsonNode
                 return $result;
 
             case is_object($value) || is_array($value):
-                $class = $this->ownerDocument_->getExpectedNodeClass($jsonPtr);
+                $class = $this->ownerDocument_
+                    ->getExpectedNodeClass($jsonPtr, $value);
 
                 return new $class($value, $this->ownerDocument_, $jsonPtr);
 
@@ -194,7 +195,8 @@ class JsonNode
         ?int $flags = null
     ): self {
         if ($flags & self::COPY_UPON_IMPORT) {
-            $class = $this->ownerDocument_->getExpectedNodeClass($jsonPtr);
+            $class = $this->ownerDocument_
+                ->getExpectedNodeClass($jsonPtr, $node);
 
             $node = new $class(
                 $node,
@@ -215,7 +217,8 @@ class JsonNode
 
         foreach ($walker as $jsonPtr => $subNode) {
             if ($flags & self::COPY_UPON_IMPORT) {
-                $class = $this->ownerDocument_->getExpectedNodeClass($jsonPtr);
+                $class = $this->ownerDocument_
+                    ->getExpectedNodeClass($jsonPtr, $subNode);
 
                 $subNode = new $class(
                     $subNode,
@@ -261,7 +264,8 @@ class JsonNode
 
         foreach ($walker as $jsonPtrFragment => $subNode) {
             if ($flags & self::COPY_UPON_IMPORT) {
-                $class = $this->ownerDocument_->getExpectedNodeClass($jsonPtr);
+                $class = $this->ownerDocument_
+                    ->getExpectedNodeClass($jsonPtr, $subNode);
 
                 $subNode = new $class(
                     $subNode,
