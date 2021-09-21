@@ -228,6 +228,7 @@ class JsonNodeTest extends TestCase
 
         self::checkStructure($jsonDoc2);
 
+        $jsonDoc->getDocumentFactory();
         $this->assertEquals($jsonDoc, $jsonDoc2);
 
         $jsonDoc2 = $jsonDoc2->resolveReferences();
@@ -295,6 +296,7 @@ class JsonNodeTest extends TestCase
 
         self::checkStructure($jsonDoc2);
 
+        $jsonDoc->getDocumentFactory();
         $this->assertEquals($jsonDoc, $jsonDoc2);
 
         $jsonDoc2 = $jsonDoc2->resolveReferences(JsonNode::RESOLVE_EXTERNAL);

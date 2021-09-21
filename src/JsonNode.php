@@ -177,7 +177,8 @@ class JsonNode
      *
      * @param $flags 0 or @ref COPY_UPON_IMPORT
      *
-     * @warning This method modifies $node. To import a copy, pass a clone.
+     * @warning This method may modify $node or children thereof unless @ref
+     * COPY_UPON_IMPORT is given in $flags.
      *
      * @note This method does not insert the node into the tree. It only
      * prepares it so that it can then be inserted into the right place.
@@ -240,7 +241,8 @@ class JsonNode
      *
      * @param $flags 0 or @ref COPY_UPON_IMPORT
      *
-     * @warning This method modifies $node. To import a copy, pass a clone.
+     * @warning This method may modify children of $node unless @ref
+     * COPY_UPON_IMPORT is given in $flags.
      *
      * @note This method does not insert the node into the tree. It only
      * prepares it so that it can then be inserted into the right place.
@@ -254,11 +256,8 @@ class JsonNode
         string $jsonPtr,
         ?int $flags = null
     ): array {
-        $walker = new RecursiveWalker(
-            $node,
-            RecursiveWalker::JSON_OBJECTS_ONLY
-            | RecursiveWalker::OMIT_START_NODE
-        );
+        $walker =
+            new RecursiveWalker($node, RecursiveWalker::JSON_OBJECTS_ONLY);
 
         foreach ($walker as $jsonPtrFragment => $subNode) {
             if ($flags & self::COPY_UPON_IMPORT) {
@@ -282,18 +281,22 @@ class JsonNode
     }
 
     /**
-     * @warning Event though this method may also modify $this, the return
-     * value may be different from $this and does not even need to be an
-     * object.
+     * @param $flags One of
+     * - @ref RESOLVE_INTERNAL
+     * - @ref RESOLVE_EXTERNAL
+     * - @ref RESOLVE_ALL
+     *
+     * @param $mayReplaceNode Whether this function is allowed to replace
+     * $this in the JSON tree.
+     *
+     * @warning Event though this method may modify $this, the return value
+     * may be different from $this and does not even need to be an object.
      */
     public function resolveReferences(
         int $flags = self::RESOLVE_ALL,
-        bool $mayReplaceNode = true,
-        ?JsonDocumentFactory $factory = null
+        bool $mayReplaceNode = true
     ) {
-        if (!isset($factory)) {
-            $factory = new JsonDocumentFactory();
-        }
+        $factory = $this->ownerDocument_->getDocumentFactory();
 
         $result = $this;
 
@@ -301,69 +304,68 @@ class JsonNode
             new RecursiveWalker($result, RecursiveWalker::JSON_OBJECTS_ONLY);
 
         foreach ($walker as $jsonPtr => $node) {
-            if ($node instanceof self && isset($node->{'$ref'})) {
-                $ref = $node->{'$ref'};
-
-                switch (true) {
-                    case $ref[0] == '#' && $flags & self::RESOLVE_INTERNAL:
-                        $newNode =
-                            $result->ownerDocument_->getNode(substr($ref, 1));
-
-                        if ($newNode instanceof self) {
-                            $newNode = $newNode->createDeepCopy();
-                        }
-
-                        break;
-
-                    case $ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL:
-                        $url = UriResolver::resolve(
-                            $node->baseUri_,
-                            new Uri($ref)
-                        );
-
-                        /* The new documents must not be created in their
-                         * final place, because then it might be impossible to
-                         * resolve references inside them. Sothey must first
-                         * be created as standalone documents and later be
-                         * imported into their final place. */
-
-                        if ($url->getFragment() == '') {
-                            $newNode = $factory->createFromUrl($url);
-                        } else {
-                            $newNode = $factory
-                                ->createFromUrl($url->withFragment(''))
-                                ->getNode($url->getFragment());
-                        }
-                        break;
-
-                    default:
-                        continue 2;
-                }
-
-                if ($newNode instanceof self) {
-                    $newNode = $newNode->resolveReferences($flags, false);
-                } elseif (is_array($newNode)) {
-                    $newNode =
-                        $this->resolveReferencesInArray($newNode, $flags);
-                }
-
-                if ($newNode instanceof self) {
-                    $newNode = $result->importObjectNode(
-                        $newNode,
-                        $jsonPtr,
-                        self::COPY_UPON_IMPORT
-                    );
-                } elseif (is_array($newNode)) {
-                    $newNode = $result->importArrayNode(
-                        $newNode,
-                        $jsonPtr,
-                        self::COPY_UPON_IMPORT
-                    );
-                }
-
-                $walker->replaceCurrent($newNode);
-                $walker->skipChildren();
+            if (!isset($node->{'$ref'})) {
+                continue;
             }
+
+            $ref = $node->{'$ref'};
+
+            switch (true) {
+                case $ref[0] == '#' && $flags & self::RESOLVE_INTERNAL:
+                    $newNode =
+                        $result->ownerDocument_->getNode(substr($ref, 1));
+
+                    if ($newNode instanceof self) {
+                        $newNode = $newNode->createDeepCopy();
+                    }
+
+                    break;
+
+                case $ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL:
+                    $url = UriResolver::resolve($node->baseUri_, new Uri($ref));
+
+                    /* The new document must not be created in its final
+                     * place, because then it might be impossible to resolve
+                     * references inside it. So it must first be created as a
+                     * standalone document and later be imported into its
+                     * final place. */
+
+                    if ($url->getFragment() == '') {
+                        $newNode = $factory->createFromUrl($url);
+                    } else {
+                        $newNode = $factory
+                            ->createFromUrl($url->withFragment(''))
+                            ->getNode($url->getFragment());
+                    }
+                    break;
+
+                default:
+                    continue 2;
+            }
+
+            if ($newNode instanceof self) {
+                $newNode = $newNode->resolveReferences($flags, false);
+            } elseif (is_array($newNode)) {
+                $newNode =
+                    $this->resolveReferencesInArray($newNode, $flags);
+            }
+
+            if ($newNode instanceof self) {
+                $newNode = $result->importObjectNode(
+                    $newNode,
+                    $jsonPtr,
+                    self::COPY_UPON_IMPORT
+                );
+            } elseif (is_array($newNode)) {
+                $newNode = $result->importArrayNode(
+                    $newNode,
+                    $jsonPtr,
+                    self::COPY_UPON_IMPORT
+                );
+            }
+
+            $walker->replaceCurrent($newNode);
+            $walker->skipChildren();
         }
 
         if ($mayReplaceNode && $result !== $this && $this->jsonPtr_ != '/') {

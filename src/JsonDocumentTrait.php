@@ -12,6 +12,23 @@ use alcamo\exception\{DataValidationFailed, SyntaxError, Unsupported};
  */
 trait JsonDocumentTrait
 {
+    private $documentFactory_; ///< JsonDocumentFactory
+
+    public function getDocumentFactory(): JsonDocumentFactory
+    {
+        if (!isset($this->documentFactory_)) {
+            $this->documentFactory_ = new JsonDocumentFactory();
+        }
+
+        return $this->documentFactory_;
+    }
+
+    public function setDocumentFactory(
+        JsonDocumentFactory $documentFactory
+    ): void {
+        $this->documentFactory_ = $documentFactory;
+    }
+
     /// Get JSON node identified by JSON pointer
     public function getNode(string $jsonPtr)
     {
