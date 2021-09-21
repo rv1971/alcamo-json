@@ -35,11 +35,27 @@ class JsonDocumentFactory
         );
     }
 
-    public function createFromUrl($url): JsonNode
+    /**
+     * @param $url If this URL contains a fragment, return the node indicated
+     * by the fragment, otherwise the entire document.
+     */
+    public function createFromUrl($url)
     {
-        return static::createFromJsonText(
-            file_get_contents($url),
-            $url instanceof UriInterface ? $url : new Uri($url)
-        );
+        if (!$url instanceof UriInterface) {
+            $url = new Uri($url);
+        }
+
+        $fragment = $url->getFragment();
+
+        if ($fragment == '') {
+            return static::createFromJsonText(file_get_contents($url), $url);
+        } else {
+            $urlWithoutFragment = $url->withFragment('');
+
+            return static::createFromJsonText(
+                file_get_contents($urlWithoutFragment),
+                $urlWithoutFragment
+            )->getNode($fragment);
+        }
     }
 }

@@ -16,6 +16,20 @@ class JsonDocumentFactoryTest extends TestCase
 
         $this->assertInstanceOf(JsonDocument::class, $jsonDoc);
 
+        $this->assertSame(17, $jsonDoc->foo->{'~~'}->{'/~'}[5]);
+
+        $jsonDoc2 = $factory->createFromUrl(
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+            . '#/foo/~1'
+        );
+
+        $this->assertInstanceOf(JsonNode::class, $jsonDoc2);
+
+        $this->assertNotInstanceOf(JsonDocument::class, $jsonDoc2);
+
+        $this->assertSame(42, $jsonDoc2->{'~/'});
+
         $factory2 = new JsonDocumentFactory(null, JSON_BIGINT_AS_STRING);
 
         $bigint = PHP_INT_MAX . PHP_INT_MAX;

@@ -322,21 +322,16 @@ class JsonNode
                     break;
 
                 case $ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL:
-                    $url = UriResolver::resolve($node->baseUri_, new Uri($ref));
-
                     /* The new document must not be created in its final
                      * place, because then it might be impossible to resolve
                      * references inside it. So it must first be created as a
                      * standalone document and later be imported into its
                      * final place. */
 
-                    if ($url->getFragment() == '') {
-                        $newNode = $factory->createFromUrl($url);
-                    } else {
-                        $newNode = $factory
-                            ->createFromUrl($url->withFragment(''))
-                            ->getNode($url->getFragment());
-                    }
+                    $newNode = $factory->createFromUrl(
+                        UriResolver::resolve($node->baseUri_, new Uri($ref))
+                    );
+
                     break;
 
                 default:
