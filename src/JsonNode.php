@@ -11,10 +11,7 @@
 
 namespace alcamo\json;
 
-use alcamo\exception\Recursion;
 use alcamo\ietf\Uri;
-use Ds\Set;
-use GuzzleHttp\Psr7\UriResolver;
 use Psr\Http\Message\UriInterface;
 
 /**
@@ -23,10 +20,6 @@ use Psr\Http\Message\UriInterface;
 class JsonNode
 {
     public const COPY_UPON_IMPORT = 1; ///< Clone nodes in import methods
-
-    public const RESOLVE_INTERNAL = 1; ///< Resolve refs within the document
-    public const RESOLVE_EXTERNAL = 2; ///< Resolve refs outside the document
-    public const RESOLVE_ALL      = 3; ///< Resolve all refs
 
     private $ownerDocument_;   ///< self
     private $jsonPtr_;         ///< string
@@ -287,136 +280,14 @@ class JsonNode
     }
 
     /**
-     * @param $flags One of
-     * - @ref RESOLVE_INTERNAL
-     * - @ref RESOLVE_EXTERNAL
-     * - @ref RESOLVE_ALL
-     *
-     * @param $mayReplaceNode Whether this function is allowed to replace
-     * $this in the JSON tree.
+     * @param $flags One of the ReferenceResolver constants
      *
      * @warning Event though this method may modify $this, the return value
      * may be different from $this and does not even need to be an object.
      */
     public function resolveReferences(
-        int $flags = self::RESOLVE_ALL,
-        bool $mayReplaceNode = true,
-        ?Set $replacementHistory = null
+        int $flags = ReferenceResolver::RESOLVE_ALL
     ) {
-        $factory = $this->ownerDocument_->getDocumentFactory();
-
-        $result = $this;
-
-        if (!isset($replacementHistory)) {
-            $replacementHistory = new Set();
-        }
-
-        $walker =
-            new RecursiveWalker($result, RecursiveWalker::JSON_OBJECTS_ONLY);
-
-        foreach ($walker as $jsonPtr => $node) {
-            if (!isset($node->{'$ref'}) || !is_string($node->{'$ref'})) {
-                continue;
-            }
-
-            $ref = $node->{'$ref'};
-
-            switch (true) {
-                case $ref[0] == '#' && $flags & self::RESOLVE_INTERNAL:
-                    $newNode =
-                        $result->ownerDocument_->getNode(substr($ref, 1));
-
-                    if ($newNode instanceof self) {
-                        $newNode = $newNode->createDeepCopy();
-                    }
-
-                    break;
-
-                case $ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL:
-                    /* The new document must not be created in its final place
-                     * in the existing document, because then it might be
-                     * impossible to resolve references inside it. So it must
-                     * first be created as a standalone document and later be
-                     * imported. */
-
-                    $newNode = $factory->createFromUrl(
-                        UriResolver::resolve($node->baseUri_, new Uri($ref))
-                    );
-
-                    break;
-
-                default:
-                    continue 2;
-            }
-
-            if ($replacementHistory->contains([ $jsonPtr, $ref ])) {
-                throw new Recursion(
-                    "Recursion detected: attempting to resolve "
-                    . "$ref at $jsonPtr for the second time"
-                );
-            }
-
-            $nextReplacementHistory = clone $replacementHistory;
-            $nextReplacementHistory->add([ $jsonPtr, $ref ]);
-
-            if ($newNode instanceof self) {
-                $newNode = $newNode->resolveReferences(
-                    $flags,
-                    false,
-                    $nextReplacementHistory
-                );
-            } elseif (is_array($newNode)) {
-                $newNode =
-                    $this->resolveReferencesInArray(
-                        $newNode,
-                        $flags,
-                        $nextReplacementHistory
-                    );
-            }
-
-            /* COPY_UPON_IMPORT is necessary because the nodes might get a
-             * different PHP class upon copying. */
-            if ($newNode instanceof self) {
-                $newNode = $result->importObjectNode(
-                    $newNode,
-                    $jsonPtr,
-                    self::COPY_UPON_IMPORT
-                );
-            } elseif (is_array($newNode)) {
-                $newNode = $result->importArrayNode(
-                    $newNode,
-                    $jsonPtr,
-                    self::COPY_UPON_IMPORT
-                );
-            }
-
-            $walker->replaceCurrent($newNode);
-            $walker->skipChildren();
-        }
-
-        if ($mayReplaceNode && $result !== $this && $this->jsonPtr_ != '/') {
-            $this->ownerDocument_->setNode($this->jsonPtr_, $result);
-        }
-
-        return $result;
-    }
-
-    private function resolveReferencesInArray(
-        array $node,
-        int $flags,
-        Set $replacementHistory
-    ) {
-        $walker =
-            new RecursiveWalker($node, RecursiveWalker::JSON_OBJECTS_ONLY);
-
-        foreach ($walker as $subNode) {
-            $walker->replaceCurrent(
-                $subNode->resolveReferences($flags, false, $replacementHistory)
-            );
-
-            $walker->skipChildren();
-        }
-
-        return $node;
+        return (new ReferenceResolver($flags))->resolve($this);
     }
 }
