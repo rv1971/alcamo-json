@@ -1,0 +1,14 @@
+{
+    "foo": [
+        [
+            { "$ref": "#/bar" }
+        ]
+    ],
+    "bar": { "$ref": "#/baz/qux" },
+    "baz": {
+        "qux": { "$ref": "#/baz/quux/0" },
+        "quux": [
+            { "$ref": "#/foo" }
+        ]
+    }
+}

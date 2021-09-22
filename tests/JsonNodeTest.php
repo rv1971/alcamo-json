@@ -2,6 +2,7 @@
 
 namespace alcamo\json;
 
+use alcamo\exception\Recursion;
 use PHPUnit\Framework\TestCase;
 
 class JsonNodeTest extends TestCase
@@ -18,6 +19,8 @@ class JsonNodeTest extends TestCase
         . 'foo' . DIRECTORY_SEPARATOR
         . 'quux' . DIRECTORY_SEPARATOR
         . 'quux.json';
+    public const RECURSIVE_FILENAME = __DIR__ . DIRECTORY_SEPARATOR
+        . 'recursive.json';
 
     public static function checkStructure(JsonDocument $doc): void
     {
@@ -357,5 +360,23 @@ class JsonNodeTest extends TestCase
         $this->assertSame($jsonDoc->getBaseUri(), $jsonDoc2->getBaseUri());
 
         $this->assertSame($barUri, (string)$jsonDoc2->bar[1]->getBaseUri());
+    }
+
+    public function testResolveRecursion()
+    {
+        $factory = new JsonDocumentFactory();
+
+        $jsonDoc = $factory->createFromUrl(
+            'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::RECURSIVE_FILENAME)
+        );
+
+        $this->expectException(Recursion::class);
+        $this->expectExceptionMessage(
+            'Recursion detected: attempting to resolve '
+            . '#/bar at /foo/0/0 for the second time'
+        );
+
+        $jsonDoc->resolveReferences();
     }
 }

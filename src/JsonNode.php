@@ -11,7 +11,9 @@
 
 namespace alcamo\json;
 
+use alcamo\exception\Recursion;
 use alcamo\ietf\Uri;
+use Ds\Set;
 use GuzzleHttp\Psr7\UriResolver;
 use Psr\Http\Message\UriInterface;
 
@@ -298,11 +300,16 @@ class JsonNode
      */
     public function resolveReferences(
         int $flags = self::RESOLVE_ALL,
-        bool $mayReplaceNode = true
+        bool $mayReplaceNode = true,
+        ?Set $replacementHistory = null
     ) {
         $factory = $this->ownerDocument_->getDocumentFactory();
 
         $result = $this;
+
+        if (!isset($replacementHistory)) {
+            $replacementHistory = new Set();
+        }
 
         $walker =
             new RecursiveWalker($result, RecursiveWalker::JSON_OBJECTS_ONLY);
@@ -342,11 +349,29 @@ class JsonNode
                     continue 2;
             }
 
+            if ($replacementHistory->contains([ $jsonPtr, $ref ])) {
+                throw new Recursion(
+                    "Recursion detected: attempting to resolve "
+                    . "$ref at $jsonPtr for the second time"
+                );
+            }
+
+            $nextReplacementHistory = clone $replacementHistory;
+            $nextReplacementHistory->add([ $jsonPtr, $ref ]);
+
             if ($newNode instanceof self) {
-                $newNode = $newNode->resolveReferences($flags, false);
+                $newNode = $newNode->resolveReferences(
+                    $flags,
+                    false,
+                    $nextReplacementHistory
+                );
             } elseif (is_array($newNode)) {
                 $newNode =
-                    $this->resolveReferencesInArray($newNode, $flags);
+                    $this->resolveReferencesInArray(
+                        $newNode,
+                        $flags,
+                        $nextReplacementHistory
+                    );
             }
 
             /* COPY_UPON_IMPORT is necessary because the nodes might get a
@@ -378,13 +403,17 @@ class JsonNode
 
     private function resolveReferencesInArray(
         array $node,
-        int $flags = self::RESOLVE_ALL
+        int $flags,
+        Set $replacementHistory
     ) {
         $walker =
             new RecursiveWalker($node, RecursiveWalker::JSON_OBJECTS_ONLY);
 
         foreach ($walker as $subNode) {
-            $walker->replaceCurrent($subNode->resolveReferences($flags, false));
+            $walker->replaceCurrent(
+                $subNode->resolveReferences($flags, false, $replacementHistory)
+            );
+
             $walker->skipChildren();
         }
 
