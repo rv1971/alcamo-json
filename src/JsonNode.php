@@ -144,8 +144,9 @@ class JsonNode
     {
         switch (true) {
             case is_array($value)
-                && (isset($value[0]) || array_key_exists(0, $value))
-                && array_keys($value) === range(0, count($value) - 1):
+                && ($value == []
+                    || (isset($value[0]) || array_key_exists(0, $value))
+                    && array_keys($value) === range(0, count($value) - 1)):
                 $result = [];
 
                 foreach ($value as $subKey => $subValue) {
