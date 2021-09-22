@@ -308,7 +308,7 @@ class JsonNode
             new RecursiveWalker($result, RecursiveWalker::JSON_OBJECTS_ONLY);
 
         foreach ($walker as $jsonPtr => $node) {
-            if (!isset($node->{'$ref'})) {
+            if (!isset($node->{'$ref'}) || !is_string($node->{'$ref'})) {
                 continue;
             }
 
