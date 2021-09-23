@@ -101,12 +101,25 @@ class JsonNode
         return $this->baseUri_;
     }
 
-    /// URI reference of this node, if a base URI is specified
-    public function getUri(): ?UriInterface
+    /**
+     * @brief URI reference of this node
+     *
+     * @param $jsonPtrFragment Extra string, which must not begin with a
+     * slash, to append to the JSON pointer. This is useful to generate URIs
+     * for child nodes, especially if the child nodes are not objects and
+     * therefore have no getUri() method.
+     */
+    public function getUri(?string $jsonPtrFragment = null): UriInterface
     {
+        $jsonPtr = $this->jsonPtr_;
+
+        if (isset($jsonPtrFragment)) {
+            $jsonPtr .= "/$jsonPtrFragment";
+        }
+
         return isset($this->ownerDocument_->baseUri_)
-            ? $this->ownerDocument_->baseUri_->withFragment($this->jsonPtr_)
-            : null;
+            ? $this->ownerDocument_->baseUri_->withFragment($jsonPtr)
+            : new Uri("#$jsonPtr");
     }
 
     /**

@@ -60,6 +60,11 @@ class JsonNodeTest extends TestCase
             "$expectedBaseUri#$expectedJsonPtr",
             $node->getUri()
         );
+
+        $this->assertEquals(
+            "$expectedBaseUri#$expectedJsonPtr/foo",
+            $node->getUri('foo')
+        );
     }
 
     public function getJsonPtrProvider()
@@ -88,6 +93,21 @@ class JsonNodeTest extends TestCase
             [ $qux[6][0][2]->QUUX, '/bar/baz/qux/6/0/2/QUUX', 'QUUX' ],
             [ $qux[6][1][1], '/bar/baz/qux/6/1/1', '1' ]
         ];
+    }
+
+    public function testWithoutBaseUrl()
+    {
+        $factory = new JsonDocumentFactory();
+
+        $jsonDoc =
+            $factory->createFromJsonText(file_get_contents(self::FOO_FILENAME));
+
+        $this->assertEquals('#/', $jsonDoc->getUri());
+
+        $this->assertEquals(
+            '#/bar/baz/qux/0',
+            $jsonDoc->bar->baz->getUri('qux/0')
+        );
     }
 
     public function testClone()
