@@ -177,7 +177,12 @@ class JsonNode
                 $class = $this->ownerDocument_
                     ->getExpectedNodeClass($jsonPtr, $value);
 
-                return new $class($value, $this->ownerDocument_, $jsonPtr);
+                return new $class(
+                    $value,
+                    $this->ownerDocument_,
+                    $jsonPtr,
+                    $this->baseUri_
+                );
 
             default:
                 return $value;
