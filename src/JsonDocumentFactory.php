@@ -22,6 +22,12 @@ class JsonDocumentFactory
         $this->flags_ = $flags ?? JSON_THROW_ON_ERROR;
     }
 
+    /// Wrapper for json_decode()
+    public function decodeJson(string $jsonText)
+    {
+        return json_decode($jsonText, false, $this->depth_, $this->flags_);
+    }
+
     public function createFromJsonText(
         string $jsonText,
         $baseUri = null
@@ -32,12 +38,7 @@ class JsonDocumentFactory
             $baseUri = new Uri($baseUri);
         }
 
-        return new $class(
-            json_decode($jsonText, false, $this->depth_, $this->flags_),
-            null,
-            null,
-            $baseUri
-        );
+        return new $class($this->decodeJson($jsonText), null, null, $baseUri);
     }
 
     /**
