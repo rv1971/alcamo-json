@@ -3,10 +3,7 @@
 namespace alcamo\json;
 
 use alcamo\exception\Recursion;
-use alcamo\ietf\Uri;
 use Ds\Set;
-use GuzzleHttp\Psr7\UriResolver;
-use Psr\Http\Message\UriInterface;
 
 /**
  * @brief Resolver of JSON references
@@ -81,12 +78,8 @@ class ReferenceResolver
                      * first be created as a standalone document and later be
                      * imported. */
 
-                    $newNode = $factory->createFromUrl(
-                        UriResolver::resolve(
-                            $subNode->getBaseUri(),
-                            new Uri($ref)
-                        )
-                    );
+                    $newNode =
+                        $factory->createFromUrl($subNode->resolveUri($ref));
 
                     break;
 

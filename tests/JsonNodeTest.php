@@ -5,6 +5,9 @@ namespace alcamo\json;
 use alcamo\exception\Recursion;
 use PHPUnit\Framework\TestCase;
 
+/*
+ * JsonNode::resolveUri() is implicitely tested in ReferenceResolverTest.php
+ */
 class JsonNodeTest extends TestCase
 {
     public const FOO_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'foo.json';

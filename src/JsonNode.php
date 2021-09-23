@@ -12,6 +12,7 @@
 namespace alcamo\json;
 
 use alcamo\ietf\Uri;
+use GuzzleHttp\Psr7\UriResolver;
 use Psr\Http\Message\UriInterface;
 
 /**
@@ -98,6 +99,22 @@ class JsonNode
     public function getBaseUri(): ?UriInterface
     {
         return $this->baseUri_;
+    }
+
+    /**
+     * @brief Resolve potentially relative URI against base URI
+     *
+     * Leave $uri unchanged if base URI is not set.
+     */
+    public function resolveUri($uri): UriInterface
+    {
+        if (!($uri instanceof UriInterface)) {
+            $uri = new Uri($uri);
+        }
+
+        return isset($this->baseUri_)
+            ? UriResolver::resolve($this->baseUri_, $uri)
+            : $uri;
     }
 
     public function toJsonText(?int $flags = null, ?int $depth = null): string
