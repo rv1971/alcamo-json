@@ -207,6 +207,12 @@ class ReferenceResolverTest extends TestCase
         $this->assertSame($jsonDoc->getBaseUri(), $jsonDoc2->getBaseUri());
 
         $this->assertSame($barUri, (string)$jsonDoc2->bar[1]->getBaseUri());
+
+        // node URI is computed from document URI
+        $this->assertEquals(
+            "$quxUri#/bar/1",
+            $jsonDoc2->bar[1]->getUri()
+        );
     }
 
     public function testResolveRecursion()

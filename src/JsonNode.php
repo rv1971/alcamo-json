@@ -101,6 +101,14 @@ class JsonNode
         return $this->baseUri_;
     }
 
+    /// URI reference of this node, if a base URI is specified
+    public function getUri(): ?UriInterface
+    {
+        return isset($this->ownerDocument_->baseUri_)
+            ? $this->ownerDocument_->baseUri_->withFragment($this->jsonPtr_)
+            : null;
+    }
+
     /**
      * @brief Resolve potentially relative URI against base URI
      *
