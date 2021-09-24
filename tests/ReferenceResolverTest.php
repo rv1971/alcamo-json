@@ -153,11 +153,9 @@ class ReferenceResolverTest extends TestCase
 
         $this->assertNotEquals($jsonDoc, $jsonDoc2);
 
-        $this->assertSame('#/defs/foo', $jsonDoc2->bar->foo->{'$ref'});
+        $this->assertFalse(isset($jsonDoc2->foo->{'$ref'}));
 
         $this->assertSame($barUri, (string)$jsonDoc2->getBaseUri());
-
-        $jsonDoc2 = $jsonDoc->createDeepCopy();
 
         $jsonDoc2 = $jsonDoc2->resolveReferences();
 
@@ -166,7 +164,7 @@ class ReferenceResolverTest extends TestCase
         // check that all references have been replaced
         $this->assertSame(false, strpos($jsonDoc2, '$ref'));
 
-        $this->assertSame('Lorem ipsum', $jsonDoc2->bar->foo);
+        $this->assertSame('Lorem ipsum', $jsonDoc2->foo);
     }
 
     // other internal/external replacements

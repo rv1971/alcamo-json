@@ -29,7 +29,7 @@ class ReferenceResolver
 
     public function resolve(JsonNode $startNode)
     {
-        $result = $this->internalResolve($startNode, new Set());
+        $result = $this->internalResolve($startNode, $this->flags_, new Set());
 
         if ($result !== $startNode && $startNode->getJsonPtr() != '/') {
             $startNode->getOwnerDocument()
@@ -39,7 +39,7 @@ class ReferenceResolver
         return $result;
     }
 
-    private function internalResolve(JsonNode $node, Set $history)
+    private function internalResolve(JsonNode $node, int $flags, Set $history)
     {
         $factory = $node->getOwnerDocument()->getDocumentFactory();
 
@@ -61,7 +61,9 @@ class ReferenceResolver
             }
 
             switch (true) {
-                case $ref[0] == '#' && $this->flags_ & self::RESOLVE_INTERNAL:
+                case $ref[0] == '#' && $flags & self::RESOLVE_INTERNAL:
+                    $isExternal = false;
+
                     $newNode =
                         $subNode->getOwnerDocument()->getNode(substr($ref, 1));
 
@@ -71,7 +73,9 @@ class ReferenceResolver
 
                     break;
 
-                case $ref[0] != '#' && $this->flags_ & self::RESOLVE_EXTERNAL:
+                case $ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL:
+                    $isExternal = true;
+
                     /* The new document must not be created in its final place
                      * in the existing document, because then it might be
                      * impossible to resolve references inside it. So it must
@@ -94,16 +98,31 @@ class ReferenceResolver
                 );
             }
 
+            /* When importing an external node, any internal references in
+             * that node must be resolved even when not requested by $flags
+             * because after import this might not be possible any more. Even
+             * when an entire external JSON document is imported, the JSON
+             * pointers do not work any more after import into a place which
+             * is not the document root. */
+
             if ($newNode instanceof JsonNode) {
                 $nextHistory = clone $history;
                 $nextHistory->add([ $jsonPtr, $ref ]);
 
-                $newNode = $this->internalResolve($newNode, $nextHistory);
+                $newNode = $this->internalResolve(
+                    $newNode,
+                    $isExternal ? self::RESOLVE_ALL : $flags,
+                    $nextHistory
+                );
             } elseif (is_array($newNode)) {
                 $nextHistory = clone $history;
                 $nextHistory->add([ $jsonPtr, $ref ]);
 
-                $newNode = $this->resolveInArray($newNode, $nextHistory);
+                $newNode = $this->resolveInArray(
+                    $newNode,
+                    $isExternal ? self::RESOLVE_ALL : $flags,
+                    $nextHistory
+                );
             }
 
             /* COPY_UPON_IMPORT is necessary because the nodes might get a
@@ -129,14 +148,14 @@ class ReferenceResolver
         return $node;
     }
 
-    private function resolveInArray(array $node, Set $history)
+    private function resolveInArray(array $node, int $flags, Set $history)
     {
         $walker =
             new RecursiveWalker($node, RecursiveWalker::JSON_OBJECTS_ONLY);
 
         foreach ($walker as $subNode) {
             $walker->replaceCurrent(
-                $this->internalResolve($subNode, $history)
+                $this->internalResolve($subNode, $flags, $history)
             );
 
             $walker->skipChildren();

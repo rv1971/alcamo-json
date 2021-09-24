@@ -1,1 +1,1 @@
-{ "$ref": "../bar.json" }
+{ "$ref": "../bar.json#/bar" }

@@ -1,5 +1,6 @@
 {
     "foo": { "$ref": "../../bar.json#/bar/foo" },
     "bar": { "$ref": "../../bar.json#/bar/bar" },
-    "quux": { "$ref": "../quux/quux.json#/foo" }
+    "quux": { "$ref": "../quux/quux.json#/foo" },
+    "corge": { "$ref": "../quux/quux.json" }
 }
