@@ -2,7 +2,7 @@
 
 namespace alcamo\json;
 
-use alcamo\exception\Recursion;
+use alcamo\exception\{DataValidationFailed, Recursion};
 use PHPUnit\Framework\TestCase;
 
 /*

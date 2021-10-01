@@ -44,7 +44,7 @@ class JsonNode
      * document.
      */
     public function __construct(
-        $data,
+        object $data,
         ?self $ownerDocument = null,
         ?string $jsonPtr = null,
         ?UriInterface $baseUri = null
@@ -196,10 +196,10 @@ class JsonNode
 
             case is_object($value) || is_array($value):
                 $class = $this->ownerDocument_
-                    ->getExpectedNodeClass($jsonPtr, $value);
+                    ->getNodeClassToUse($jsonPtr, $value);
 
                 return new $class(
-                    $value,
+                    (object)$value,
                     $this->ownerDocument_,
                     $jsonPtr,
                     $this->baseUri_
@@ -235,7 +235,7 @@ class JsonNode
     ): self {
         if ($flags & self::COPY_UPON_IMPORT) {
             $class = $this->ownerDocument_
-                ->getExpectedNodeClass($jsonPtr, $node);
+                ->getNodeClassToUse($jsonPtr, $node);
 
             $node = new $class(
                 $node,
@@ -257,7 +257,7 @@ class JsonNode
         foreach ($walker as $jsonPtr => $subNode) {
             if ($flags & self::COPY_UPON_IMPORT) {
                 $class = $this->ownerDocument_
-                    ->getExpectedNodeClass($jsonPtr, $subNode);
+                    ->getNodeClassToUse($jsonPtr, $subNode);
 
                 $subNode = new $class(
                     $subNode,
@@ -304,7 +304,7 @@ class JsonNode
         foreach ($walker as $jsonPtrFragment => $subNode) {
             if ($flags & self::COPY_UPON_IMPORT) {
                 $class = $this->ownerDocument_
-                    ->getExpectedNodeClass($jsonPtr, $subNode);
+                    ->getNodeClassToUse($jsonPtr, $subNode);
 
                 $subNode = new $class(
                     $subNode,
