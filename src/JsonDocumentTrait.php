@@ -3,6 +3,7 @@
 namespace alcamo\json;
 
 use alcamo\exception\{SyntaxError, Unsupported};
+use alcamo\json\exception\NodeNotFound;
 
 /**
  * @brief JSON document trait
@@ -39,18 +40,38 @@ trait JsonDocumentTrait
         }
 
         $current = $this;
+        $currentJsonPtr = '';
 
         for (
             $refToken = strtok($jsonPtr, '/');
             $refToken !== false;
             $refToken = strtok('/')
         ) {
+            $currentJsonPtr .= "/$refToken";
+
+            /** @throw alcamo::json::exception::NodeNotFound if there is no
+             *  node for the given pointer. */
+
             if (is_object($current)) {
                 $refToken =
                     str_replace([ '~1', '~0' ], [ '/', '~' ], $refToken);
 
+                if (
+                    !isset($current->$refToken)
+                    && !property_exists($current, $refToken)
+                ) {
+                    throw new NodeNotFound($this, $currentJsonPtr);
+                }
+
                 $current = $current->$refToken;
             } else {
+                if (
+                    !isset($current[$refToken])
+                    && !array_key_exists($refToken, $current)
+                ) {
+                    throw new NodeNotFound($this, $currentJsonPtr);
+                }
+
                 $current = $current[$refToken];
             }
         }
@@ -74,18 +95,38 @@ trait JsonDocumentTrait
         }
 
         $current = new ReferenceContainer($this);
+        $currentJsonPtr = '';
 
         for (
             $refToken = strtok($jsonPtr, '/');
             $refToken !== false;
             $refToken = strtok('/')
         ) {
+            $currentJsonPtr .= "/$refToken";
+
+            /** @throw alcamo::json::exception::NodeNotFound if there is no
+             *  node for the given pointer. */
+
             if ($current->value instanceof JsonNode) {
                 $refToken =
                     str_replace([ '~1', '~0' ], [ '/', '~' ], $refToken);
 
+                if (
+                    !isset($current->value->$refToken)
+                    && !property_exists($current, $refToken)
+                ) {
+                    throw new NodeNotFound($this, $currentJsonPtr);
+                }
+
                 $current = new ReferenceContainer($current->value->$refToken);
             } else {
+                if (
+                    !isset($current->value[$refToken])
+                    && !array_key_exists($refToken, $current)
+                ) {
+                    throw new NodeNotFound($this, $currentJsonPtr);
+                }
+
                 $current = new ReferenceContainer($current->value[$refToken]);
             }
         }

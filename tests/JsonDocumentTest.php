@@ -4,6 +4,7 @@ namespace alcamo\json;
 
 use PHPUnit\Framework\TestCase;
 use alcamo\exception\{DataValidationFailed, SyntaxError, Unsupported};
+use alcamo\json\exception\NodeNotFound;
 
 class JsonDocumentTest extends TestCase
 {
@@ -119,6 +120,44 @@ class JsonDocumentTest extends TestCase
     {
         $factory = new JsonDocumentFactory();
 
+        $url = 'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME);
+
+        $jsonDoc = $factory->createFromUrl($url);
+
+        $this->expectException(NodeNotFound::class);
+        $this->expectExceptionMessage(
+            "Node at \"/FOO\" not found in document "
+            . "\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[3,5...\" "
+            . "at $url"
+        );
+
+        $jsonDoc->getNode('/FOO/1/2/bar');
+    }
+
+    public function testException3()
+    {
+        $factory = new JsonDocumentFactory();
+
+        $url = 'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME);
+
+        $jsonDoc = $factory->createFromUrl($url);
+
+        $this->expectException(NodeNotFound::class);
+        $this->expectExceptionMessage(
+            "Node at \"/bar/baz/qux/42\" not found in document "
+            . "\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[3,5...\" "
+            . "at $url"
+        );
+
+        $jsonDoc->getNode('/bar/baz/qux/42/7/baz');
+    }
+
+    public function testException4()
+    {
+        $factory = new JsonDocumentFactory();
+
         $jsonDoc = $factory->createFromUrl(
             'file://'
             . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
@@ -130,5 +169,43 @@ class JsonDocumentTest extends TestCase
         );
 
         $jsonDoc->setNode('/', 'foo');
+    }
+
+    public function testException5()
+    {
+        $factory = new JsonDocumentFactory();
+
+        $url = 'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME);
+
+        $jsonDoc = $factory->createFromUrl($url);
+
+        $this->expectException(NodeNotFound::class);
+        $this->expectExceptionMessage(
+            "Node at \"/foo/bar\" not found in document "
+            . "\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[3,5...\" "
+            . "at $url"
+        );
+
+        $jsonDoc->setNode('/foo/bar/1/2/3', 42);
+    }
+
+    public function testException6()
+    {
+        $factory = new JsonDocumentFactory();
+
+        $url = 'file://'
+            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME);
+
+        $jsonDoc = $factory->createFromUrl($url);
+
+        $this->expectException(NodeNotFound::class);
+        $this->expectExceptionMessage(
+            "Node at \"/bar/baz/qux/43\" not found in document "
+            . "\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[3,5...\" "
+            . "at $url"
+        );
+
+        $jsonDoc->setNode('/bar/baz/qux/43/foo/bar', false);
     }
 }
