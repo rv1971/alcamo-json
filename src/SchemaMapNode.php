@@ -7,7 +7,5 @@ namespace alcamo\json;
  */
 class SchemaMapNode extends JsonNode
 {
-    public const CLASS_MAP = [
-        '*' => SchemaNode::class
-    ];
+    public const CLASS_MAP = [ '*' => SchemaNode::class ];
 }
