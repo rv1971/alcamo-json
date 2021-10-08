@@ -7,4 +7,15 @@ namespace alcamo\json;
  */
 class JsonReferenceNode extends JsonNode
 {
+    public static function newFromUri(
+        string $uri,
+        JsonNode $ownerDocument,
+        string $jsonPtr
+    ): self {
+        return new self(
+            (object)[ '$ref' => $uri ],
+            $ownerDocument,
+            $jsonPtr
+        );
+    }
 }
