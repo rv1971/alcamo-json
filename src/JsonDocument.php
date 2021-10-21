@@ -2,8 +2,6 @@
 
 namespace alcamo\json;
 
-use alcamo\exception\SyntaxError;
-
 /**
  * @brief JSON document
  */

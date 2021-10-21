@@ -110,7 +110,10 @@ class JsonDocumentTest extends TestCase
 
         $this->expectException(SyntaxError::class);
         $this->expectExceptionMessage(
-            'Syntax error in "foo" at 0: "foo"; not a valid JSON pointer'
+            'Syntax error in "foo" at offset 0 ("foo") at URI <alcamo\ietf\Uri>"file:/'
+        );
+        $this->expectExceptionMessage(
+            '"; not a valid JSON pointer'
         );
 
         $jsonDoc->getNode('foo');
@@ -127,9 +130,9 @@ class JsonDocumentTest extends TestCase
 
         $this->expectException(NodeNotFound::class);
         $this->expectExceptionMessage(
-            "Node at \"/FOO\" not found in document "
-            . "\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[3,5...\" "
-            . "at $url"
+            "Node at \"/FOO\" not found in <" . JsonDocument::class
+            . ">\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[...\" "
+            . "at URI \"$url#/\""
         );
 
         $jsonDoc->getNode('/FOO/1/2/bar');
@@ -146,9 +149,9 @@ class JsonDocumentTest extends TestCase
 
         $this->expectException(NodeNotFound::class);
         $this->expectExceptionMessage(
-            "Node at \"/bar/baz/qux/42\" not found in document "
-            . "\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[3,5...\" "
-            . "at $url"
+            "Node at \"/bar/baz/qux/42\" not found in <" . JsonDocument::class
+            . ">\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[...\" "
+            . "at URI \"$url#/\""
         );
 
         $jsonDoc->getNode('/bar/baz/qux/42/7/baz');
@@ -165,7 +168,7 @@ class JsonDocumentTest extends TestCase
 
         $this->expectException(Unsupported::class);
         $this->expectExceptionMessage(
-            '"/" not supported; root node cannot be replaced'
+            '"replacement of root node" not supported at URI'
         );
 
         $jsonDoc->setNode('/', 'foo');
@@ -182,9 +185,9 @@ class JsonDocumentTest extends TestCase
 
         $this->expectException(NodeNotFound::class);
         $this->expectExceptionMessage(
-            "Node at \"/foo/bar\" not found in document "
-            . "\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[3,5...\" "
-            . "at $url"
+            "Node at \"/foo/bar\" not found in <" . JsonDocument::class
+            . ">\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[...\" "
+            . "at URI \"$url#/\""
         );
 
         $jsonDoc->setNode('/foo/bar/1/2/3', 42);
@@ -201,9 +204,9 @@ class JsonDocumentTest extends TestCase
 
         $this->expectException(NodeNotFound::class);
         $this->expectExceptionMessage(
-            "Node at \"/bar/baz/qux/43\" not found in document "
-            . "\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[3,5...\" "
-            . "at $url"
+            "Node at \"/bar/baz/qux/43\" not found in <" . JsonDocument::class
+            . ">\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[...\" "
+            . "at URI \"$url#/\""
         );
 
         $jsonDoc->setNode('/bar/baz/qux/43/foo/bar', false);

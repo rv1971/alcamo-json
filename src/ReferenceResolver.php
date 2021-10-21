@@ -92,9 +92,13 @@ class ReferenceResolver
             }
 
             if ($history->contains([ $jsonPtr, $ref ])) {
-                throw new Recursion(
-                    "Recursion detected: attempting to resolve "
-                    . "$ref at $jsonPtr for the second time"
+                throw (new Recursion())->setMessageContext(
+                    [
+                        'atUri' =>
+                        "{$node->getOwnerDocument()->getUri()}#$jsonPtr",
+                        'extraMessage' =>
+                        "attempting to resolve \"$ref\" for the second time"
+                    ]
                 );
             }
 

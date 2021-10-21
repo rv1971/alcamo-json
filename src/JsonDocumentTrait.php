@@ -36,7 +36,14 @@ trait JsonDocumentTrait
         if ($jsonPtr[0] != '/') {
             /** @throw alcamo::exception::SyntaxError if $jsonPtr does not
              *  start with a slash. */
-            throw new SyntaxError($jsonPtr, 0, '; not a valid JSON pointer');
+            throw (new SyntaxError())->setMessageContext(
+                [
+                    'inData' => $jsonPtr,
+                    'atOffset' => 0,
+                    'extraMessage' => 'not a valid JSON pointer',
+                    'atUri' => $this->getUri()
+                ]
+            );
         }
 
         $current = $this;
@@ -60,7 +67,13 @@ trait JsonDocumentTrait
                     !isset($current->$refToken)
                     && !property_exists($current, $refToken)
                 ) {
-                    throw new NodeNotFound($this, $currentJsonPtr);
+                    throw (new NodeNotFound())->setMessageContext(
+                        [
+                            'inData' => $this,
+                            'jsonPtr' => $currentJsonPtr,
+                            'atUri' => $this->getUri()
+                        ]
+                    );
                 }
 
                 $current = $current->$refToken;
@@ -69,7 +82,13 @@ trait JsonDocumentTrait
                     !isset($current[$refToken])
                     && !array_key_exists($refToken, $current)
                 ) {
-                    throw new NodeNotFound($this, $currentJsonPtr);
+                    throw (new NodeNotFound())->setMessageContext(
+                        [
+                            'inData' => $this,
+                            'jsonPtr' => $currentJsonPtr,
+                            'atUri' => $this->getUri()
+                        ]
+                    );
                 }
 
                 $current = $current[$refToken];
@@ -85,13 +104,25 @@ trait JsonDocumentTrait
         if ($jsonPtr[0] != '/') {
             /** @throw alcamo::exception::SyntaxError if $jsonPtr does not
              *  start with a slash. */
-            throw new SyntaxError($jsonPtr, 0, '; not a valid JSON pointer');
+            throw (new SyntaxError())->setMessageContext(
+                [
+                    'inData' => $jsonPtr,
+                    'atOffset' => 0,
+                    'extraMessage' >= 'not a valid JSON pointer',
+                    'atUri' => $this->getUri()
+                ]
+            );
         }
 
         if ($jsonPtr == '/') {
             /** @throw alcamo::exception::Unsupported when attempting to
              *  replace the root node. */
-            throw new Unsupported('"/"', '; root node cannot be replaced');
+            throw (new Unsupported())->setMessageContext(
+                [
+                    'feature' => 'replacement of root node',
+                    'atUri' => "{$this->getUri()}#/"
+                ]
+            );
         }
 
         $current = new ReferenceContainer($this);
@@ -115,7 +146,13 @@ trait JsonDocumentTrait
                     !isset($current->value->$refToken)
                     && !property_exists($current, $refToken)
                 ) {
-                    throw new NodeNotFound($this, $currentJsonPtr);
+                    throw (new NodeNotFound())->setMessageContext(
+                        [
+                            'inData' => $this,
+                            'jsonPtr' => $currentJsonPtr,
+                            'atUri' => $this->getUri()
+                        ]
+                    );
                 }
 
                 $current = new ReferenceContainer($current->value->$refToken);
@@ -124,7 +161,13 @@ trait JsonDocumentTrait
                     !isset($current->value[$refToken])
                     && !array_key_exists($refToken, $current)
                 ) {
-                    throw new NodeNotFound($this, $currentJsonPtr);
+                    throw (new NodeNotFound())->setMessageContext(
+                        [
+                            'inData' => $this,
+                            'jsonPtr' => $currentJsonPtr,
+                            'atUri' => $this->getUri()
+                        ]
+                    );
                 }
 
                 $current = new ReferenceContainer($current->value[$refToken]);

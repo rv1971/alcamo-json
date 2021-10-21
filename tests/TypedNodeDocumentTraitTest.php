@@ -2,7 +2,7 @@
 
 namespace alcamo\json;
 
-use alcamo\exception\{DataValidationFailed, ProgramFlowException};
+use alcamo\exception\{InvalidEnumerator, ProgramFlowException};
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'FooDocument.php';
@@ -38,8 +38,10 @@ class TypedNodeDocumentTraitTest extends TestCase
 
     public function testNotFoundException()
     {
-        $this->expectException(DataValidationFailed::class);
-        $this->expectExceptionMessage('"baz" at "#/baz" not found in map');
+        $this->expectException(InvalidEnumerator::class);
+        $this->expectExceptionMessage(
+            'Invalid value "baz", expected one of ["foo", "bar"] at URI "#/baz"'
+        );
 
         $doc = new Foo2Document(
             json_decode(file_get_contents(self::FOO_FILENAME))
@@ -49,7 +51,9 @@ class TypedNodeDocumentTraitTest extends TestCase
     public function testNoMapException()
     {
         $this->expectException(ProgramFlowException::class);
-        $this->expectExceptionMessage('No CLASS_MAP in alcamo\json\Foo3Node');
+        $this->expectExceptionMessage(
+            'No CLASS_MAP in "alcamo\json\Foo3Node" at URI "#/"'
+        );
 
         $doc = new Foo3Document(
             json_decode(file_get_contents(self::FOO_FILENAME))

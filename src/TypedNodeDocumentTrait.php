@@ -2,7 +2,7 @@
 
 namespace alcamo\json;
 
-use alcamo\exception\{DataValidationFailed, ProgramFlowException};
+use alcamo\exception\{InvalidEnumerator, ProgramFlowException};
 
 /**
  * @brief JSON document class that creates child nodes of specific classes
@@ -18,7 +18,7 @@ use alcamo\exception\{DataValidationFailed, ProgramFlowException};
  * the indicated class for that property.
  *
  * The property `*` applies to all properties which are not explicitely listed
- * in the map. An alcamo::exception::DataValidationFailed exception is thrown
+ * in the map. An alcamo::exception::InvalidEnumerator exception is thrown
  * if a property having a JSON object value is not listed in the map and no
  * `*` entry exists.
  *
@@ -58,10 +58,13 @@ trait TypedNodeDocumentTrait
                 try {
                     $map = $class::CLASS_MAP;
                 } catch (\Throwable $e) {
-                /** @throw alcamo::exception::ProgramFlowException if a class
-                 *  lacks a class map. */
+                    /** @throw alcamo::exception::ProgramFlowException if
+                     *  a class lacks a class map. */
                     throw new ProgramFlowException(
-                        "No CLASS_MAP in $class"
+                        "No CLASS_MAP in {class}",
+                        0,
+                        null,
+                        [ 'atUri' => $this->getUri(), 'class' => $class ]
                     );
                 }
             }
@@ -71,13 +74,14 @@ trait TypedNodeDocumentTrait
             } catch (\Throwable $e) {
                 $uri = $this->getBaseUri() . "#$jsonPtr";
 
-                /** @throw alcamo::exception::DataValidationFailed if no entry
+                /** @throw alcamo::exception::InvalidEnumerator if no entry
                  *  is found in the class map. */
-                throw new DataValidationFailed(
-                    $refToken,
-                    $uri,
-                    null,
-                    "\"$refToken\" at \"$uri\" not found in map"
+                throw (new InvalidEnumerator())->setMessageContext(
+                    [
+                        'value' => $refToken,
+                        'expectedOneOf' => array_keys($map),
+                        'atUri' => $uri
+                    ]
                 );
             }
 

@@ -223,9 +223,9 @@ class ReferenceResolverTest extends TestCase
         );
 
         $this->expectException(Recursion::class);
+        $this->expectExceptionMessage('Recursion detected at URI "file:/');
         $this->expectExceptionMessage(
-            'Recursion detected: attempting to resolve '
-            . '#/bar at /foo/0/0 for the second time'
+            'attempting to resolve "#/bar" for the second time'
         );
 
         $jsonDoc->resolveReferences();
