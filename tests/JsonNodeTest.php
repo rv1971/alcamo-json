@@ -62,7 +62,9 @@ class JsonNodeTest extends TestCase
         );
 
         $this->assertEquals(
-            "$expectedBaseUri#$expectedJsonPtr/foo",
+            $expectedJsonPtr == '/'
+            ? "$expectedBaseUri#/foo"
+            : "$expectedBaseUri#$expectedJsonPtr/foo",
             $node->getUri('foo')
         );
     }

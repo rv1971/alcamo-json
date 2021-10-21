@@ -114,7 +114,8 @@ class JsonNode
         $jsonPtr = $this->jsonPtr_;
 
         if (isset($jsonPtrFragment)) {
-            $jsonPtr .= "/$jsonPtrFragment";
+            $jsonPtr .=
+                $jsonPtr == '/' ? $jsonPtrFragment : "/$jsonPtrFragment";
         }
 
         return isset($this->ownerDocument_->baseUri_)
