@@ -2,6 +2,7 @@
 
 namespace alcamo\json;
 
+use alcamo\exception\SyntaxError;
 use PHPUnit\Framework\TestCase;
 
 class JsonDocumentFactoryTest extends TestCase
@@ -43,7 +44,7 @@ class JsonDocumentFactoryTest extends TestCase
     {
         $factory = new JsonDocumentFactory();
 
-        $this->expectException(\JsonException::class);
+        $this->expectException(SyntaxError::class);
 
         $factory->createFromJsonText('{ "foo": 42, }');
     }

@@ -2,6 +2,7 @@
 
 namespace alcamo\json;
 
+use alcamo\exception\{ExceptionInterface, SyntaxError};
 use alcamo\ietf\Uri;
 use Psr\Http\Message\UriInterface;
 
@@ -38,7 +39,20 @@ class JsonDocumentFactory
             $baseUri = new Uri($baseUri);
         }
 
-        return new $class($this->decodeJson($jsonText), null, null, $baseUri);
+        try {
+            return
+                new $class($this->decodeJson($jsonText), null, null, $baseUri);
+        } catch (\Throwable $e) {
+            if ($e instanceof ExceptionInterface) {
+                if (isset($e->getMessageContext()['atUri'])) {
+                    throw $e;
+                } else {
+                    throw $e->addMessageContext([ 'atUri' => $baseUri ]);
+                }
+            } else {
+                throw SyntaxError::newFromPrevious($e, [ 'atUri' => $baseUri ]);
+            }
+        }
     }
 
     /**
