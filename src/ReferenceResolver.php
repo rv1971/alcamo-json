@@ -4,6 +4,7 @@ namespace alcamo\json;
 
 use alcamo\exception\Recursion;
 use Ds\Set;
+use Psr\Http\Message\UriInterface;
 
 /**
  * @brief Resolver of JSON references
@@ -39,6 +40,58 @@ class ReferenceResolver
         return $result;
     }
 
+    /**
+     * @brief Resolve an einternal URL.
+     *
+     * This implementation calls JsonDocument::getNode() to create a new node
+     * (which may be a JsonNode object, an array or a primitive type), and
+     * creates a deep copy of it if it is a JsonNode. Child classes may
+     * override this to
+     * - return a modified node (e.g. containing information about its
+     * source), or
+     * - return an empty stdClass object, in which case the containing node is
+     * not changed, i.e. the reference is not resolved. (Returning `null` for
+     * this purpose would be ambiguous because it could not be distinguished
+     * from an a reference that has been successfully resolved to a node whch
+     * is a JSON `null` item.)
+     *
+     * @warning When overriding this method to return a JsonNode from
+     * $ownerDocument, a deep copy must be created.
+     */
+    public function resolveInternalRef(
+        string $jsonPtr,
+        JsonDocument $ownerDocument
+    ) {
+        $newNode = $ownerDocument->getNode($jsonPtr);
+
+        if ($newNode instanceof JsonNode) {
+            $newNode = $newNode->createDeepCopy();
+        }
+
+        return $newNode;
+    }
+
+    /**
+     * @brief Resolve an external URL.
+     *
+     * This implementation calls JsonDocumentFactory::createFromUrl() to
+     * create a new node (which may be a JsonNode object, an array or a
+     * primitive type). Child classes may override this to
+     * - return a modified node (e.g. containing information about its
+     * source), or
+     * - return an empty stdClass object, in which case the containing node is
+     * not changed, i.e. the reference is not resolved. (Returning `null` for
+     * this purpose would be ambiguous because it could not be distinguished
+     * from an a reference that has been successfully resolved to a node whch
+     * is a JSON `null` item.)
+     */
+    public function resolveExternalRef(
+        UriInterface $url,
+        JsonDocumentFactory $factory
+    ) {
+        return $factory->createFromUrl($url);
+    }
+
     private function internalResolve(JsonNode $node, int $flags, Set $history)
     {
         $factory = $node->getOwnerDocument()->getDocumentFactory();
@@ -64,11 +117,13 @@ class ReferenceResolver
                 case $ref[0] == '#' && $flags & self::RESOLVE_INTERNAL:
                     $isExternal = false;
 
-                    $newNode =
-                        $subNode->getOwnerDocument()->getNode(substr($ref, 1));
+                    $newNode = $this->resolveInternalRef(
+                        substr($ref, 1),
+                        $subNode->getOwnerDocument()
+                    );
 
-                    if ($newNode instanceof JsonNode) {
-                        $newNode = $newNode->createDeepCopy();
+                    if ($newNode instanceof \stdClass) {
+                        continue 2;
                     }
 
                     break;
@@ -82,8 +137,14 @@ class ReferenceResolver
                      * first be created as a standalone document and later be
                      * imported. */
 
-                    $newNode =
-                        $factory->createFromUrl($subNode->resolveUri($ref));
+                    $newNode = $this->resolveExternalRef(
+                        $subNode->resolveUri($ref),
+                        $factory
+                    );
+
+                    if ($newNode instanceof \stdClass) {
+                        continue 2;
+                    }
 
                     break;
 

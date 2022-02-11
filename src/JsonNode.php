@@ -325,14 +325,19 @@ class JsonNode
     }
 
     /**
-     * @param $flags One of the ReferenceResolver constants
+     * @param $resolver A ReferenceResolver object, or one of the
+     * ReferenceResolver constants
      *
      * @warning Event though this method may modify $this, the return value
      * may be different from $this and does not even need to be an object.
      */
     public function resolveReferences(
-        int $flags = ReferenceResolver::RESOLVE_ALL
+        $resolver = ReferenceResolver::RESOLVE_ALL
     ) {
-        return (new ReferenceResolver($flags))->resolve($this);
+        if (!($resolver instanceof ReferenceResolver)) {
+            $resolver = new ReferenceResolver($resolver);
+        }
+
+        return $resolver->resolve($this);
     }
 }

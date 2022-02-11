@@ -1,0 +1,4 @@
+{
+    "bar": { "$ref": "bar.json#/defs/foo" },
+    "baz": { "$ref": "bar.json#/defs/baz" }
+}
