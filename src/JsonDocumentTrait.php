@@ -4,6 +4,7 @@ namespace alcamo\json;
 
 use alcamo\exception\{SyntaxError, Unsupported};
 use alcamo\json\exception\NodeNotFound;
+use Psr\Http\Message\UriInterface;
 
 /**
  * @brief JSON document trait
@@ -14,6 +15,19 @@ use alcamo\json\exception\NodeNotFound;
 trait JsonDocumentTrait
 {
     private $documentFactory_; ///< JsonDocumentFactory
+
+    /**
+     * @brief Construct a top-level JsonNode
+     *
+     * The signature prevents passing a wrong $ownerDocument of $jsonPtr to
+     * the JsonNnode constructor.
+     */
+    public function __construct(
+        object $data,
+        ?UriInterface $baseUri = null
+    ) {
+        return parent::__construct($data, $baseUri);
+    }
 
     public function getDocumentFactory(): JsonDocumentFactory
     {

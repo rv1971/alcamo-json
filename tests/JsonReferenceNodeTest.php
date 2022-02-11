@@ -19,6 +19,7 @@ class JsonReferenceNodeTest extends TestCase
 
         $refNode = JsonReferenceNode::newFromUri(
             'http:://www.example.com/foo.json',
+            null,
             $jsonDoc,
             '/quux'
         );

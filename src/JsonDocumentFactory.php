@@ -31,7 +31,7 @@ class JsonDocumentFactory
 
     public function createFromJsonText(
         string $jsonText,
-        $baseUri = null
+        ?UriInterface $baseUri = null
     ): JsonNode {
         $class = static::DOCUMENT_CLASS;
 
@@ -41,7 +41,7 @@ class JsonDocumentFactory
 
         try {
             return
-                new $class($this->decodeJson($jsonText), null, null, $baseUri);
+                new $class($this->decodeJson($jsonText), $baseUri);
         } catch (\Throwable $e) {
             if ($e instanceof ExceptionInterface) {
                 if (isset($e->getMessageContext()['atUri'])) {

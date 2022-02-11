@@ -22,9 +22,9 @@ class JsonNode
 {
     public const COPY_UPON_IMPORT = 1; ///< Clone nodes in import methods
 
+    private $baseUri_;         ///< ?UriInterface
     private $ownerDocument_;   ///< self
     private $jsonPtr_;         ///< string
-    private $baseUri_;         ///< ?UriInterface
 
     /**
      * @brief Construct from object or iterable, creating a public property
@@ -45,15 +45,15 @@ class JsonNode
      */
     public function __construct(
         object $data,
+        ?UriInterface $baseUri = null,
         ?self $ownerDocument = null,
-        ?string $jsonPtr = null,
-        ?UriInterface $baseUri = null
+        ?string $jsonPtr = null
     ) {
+        $this->baseUri_ = $baseUri ?? $ownerDocument->baseUri_ ?? null;
+
         $this->ownerDocument_ = $ownerDocument ?? $this;
 
         $this->jsonPtr_ = $jsonPtr ?? '/';
-
-        $this->baseUri_ = $baseUri ?? $ownerDocument->baseUri_ ?? null;
 
         if ($data instanceof self) {
             foreach ((array)$data as $key => $value) {
@@ -78,6 +78,12 @@ class JsonNode
         return $this->toJsonText();
     }
 
+    /// Base URI, if specified
+    public function getBaseUri(): ?UriInterface
+    {
+        return $this->baseUri_;
+    }
+
     /**
      * @brief Get the document (i.e. the ultimate parent) this node belongs to
      *
@@ -93,12 +99,6 @@ class JsonNode
     public function getJsonPtr(): string
     {
         return $this->jsonPtr_;
-    }
-
-    /// Base URI, if specified
-    public function getBaseUri(): ?UriInterface
-    {
-        return $this->baseUri_;
     }
 
     /**
@@ -201,9 +201,9 @@ class JsonNode
 
                 return new $class(
                     (object)$value,
+                    $this->baseUri_,
                     $this->ownerDocument_,
-                    $jsonPtr,
-                    $this->baseUri_
+                    $jsonPtr
                 );
 
             default:
@@ -240,9 +240,9 @@ class JsonNode
 
             $node = new $class(
                 $node,
+                $node->baseUri_,
                 $this->ownerDocument_,
-                $jsonPtr,
-                $node->baseUri_
+                $jsonPtr
             );
         } else {
             $node->ownerDocument_ = $this->ownerDocument_;
@@ -262,9 +262,9 @@ class JsonNode
 
                 $subNode = new $class(
                     $subNode,
+                    $subNode->baseUri_,
                     $this->ownerDocument_,
-                    $jsonPtr,
-                    $subNode->baseUri_
+                    $jsonPtr
                 );
 
                 $walker->replaceCurrent($subNode);
@@ -309,9 +309,9 @@ class JsonNode
 
                 $subNode = new $class(
                     $subNode,
+                    $subNode->baseUri_,
                     $this->ownerDocument_,
-                    "$jsonPtr/$jsonPtrFragment",
-                    $subNode->baseUri_
+                    "$jsonPtr/$jsonPtrFragment"
                 );
 
                 $walker->replaceCurrent($subNode);
