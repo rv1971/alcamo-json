@@ -41,7 +41,7 @@ class ReferenceResolver
     }
 
     /**
-     * @brief Resolve an einternal URL.
+     * @brief Resolve an internal URL.
      *
      * This implementation calls JsonDocument::getNode() to create a new node
      * (which may be a JsonNode object, an array or a primitive type), and
@@ -60,7 +60,7 @@ class ReferenceResolver
      */
     public function resolveInternalRef(
         string $jsonPtr,
-        JsonDocument $ownerDocument
+        JsonDocumentInterface $ownerDocument
     ) {
         $newNode = $ownerDocument->getNode($jsonPtr);
 

@@ -10,7 +10,7 @@ class MyReferenceResolver extends ReferenceResolver
 {
     public function resolveInternalRef(
         string $jsonPtr,
-        JsonDocument $ownerDocument
+        JsonDocumentInterface $ownerDocument
     ) {
         switch (substr($jsonPtr, -3)) {
             case 'foo':

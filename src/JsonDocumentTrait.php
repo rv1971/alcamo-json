@@ -98,7 +98,6 @@ trait JsonDocumentTrait
         return $current;
     }
 
-    /// Set JSON node identified by JSON pointer to new node
     public function setNode(string $jsonPtr, $newNode): void
     {
         if ($jsonPtr[0] != '/') {
