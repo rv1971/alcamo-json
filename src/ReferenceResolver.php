@@ -58,11 +58,10 @@ class ReferenceResolver
      * @warning When overriding this method to return a JsonNode from
      * $ownerDocument, a deep copy must be created.
      */
-    public function resolveInternalRef(
-        string $jsonPtr,
-        JsonDocumentInterface $ownerDocument
-    ) {
-        $newNode = $ownerDocument->getNode($jsonPtr);
+    public function resolveInternalRef(JsonNode $node)
+    {
+        $newNode =
+            $node->getOwnerDocument()->getNode(substr($node->{'$ref'}, 1));
 
         if ($newNode instanceof JsonNode) {
             $newNode = $newNode->createDeepCopy();
@@ -85,17 +84,14 @@ class ReferenceResolver
      * from an a reference that has been successfully resolved to a node whch
      * is a JSON `null` item.)
      */
-    public function resolveExternalRef(
-        UriInterface $url,
-        JsonDocumentFactory $factory
-    ) {
-        return $factory->createFromUrl($url);
+    public function resolveExternalRef(JsonNode $node)
+    {
+        return $node->getOwnerDocument()->getDocumentFactory()
+            ->createFromUrl($node->resolveUri($node->{'$ref'}));
     }
 
     private function internalResolve(JsonNode $node, int $flags, Set $history)
     {
-        $factory = $node->getOwnerDocument()->getDocumentFactory();
-
         $walker =
             new RecursiveWalker($node, RecursiveWalker::JSON_OBJECTS_ONLY);
 
@@ -117,10 +113,7 @@ class ReferenceResolver
                 case $ref[0] == '#' && $flags & self::RESOLVE_INTERNAL:
                     $isExternal = false;
 
-                    $newNode = $this->resolveInternalRef(
-                        substr($ref, 1),
-                        $subNode->getOwnerDocument()
-                    );
+                    $newNode = $this->resolveInternalRef($subNode);
 
                     if ($newNode instanceof \stdClass) {
                         continue 2;
@@ -137,10 +130,7 @@ class ReferenceResolver
                      * first be created as a standalone document and later be
                      * imported. */
 
-                    $newNode = $this->resolveExternalRef(
-                        $subNode->resolveUri($ref),
-                        $factory
-                    );
+                    $newNode = $this->resolveExternalRef($subNode);
 
                     if ($newNode instanceof \stdClass) {
                         continue 2;

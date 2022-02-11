@@ -8,39 +8,35 @@ use Psr\Http\Message\UriInterface;
 
 class MyReferenceResolver extends ReferenceResolver
 {
-    public function resolveInternalRef(
-        string $jsonPtr,
-        JsonDocumentInterface $ownerDocument
-    ) {
-        switch (substr($jsonPtr, -3)) {
+    public function resolveInternalRef(JsonNode $node)
+    {
+        switch (substr($node->{'$ref'}, -3)) {
             case 'foo':
                 return new \stdClass();
 
             case 'baz':
-                $newNode = parent::resolveInternalRef($jsonPtr, $ownerDocument);
-                $newNode->comment = "Resolved from $jsonPtr";
+                $newNode = parent::resolveInternalRef($node);
+                $newNode->comment = "Resolved from {$node->{'$ref'}}";
                 return $newNode;
 
             default:
-                return parent::resolveInternalRef($jsonPtr, $ownerDocument);
+                return parent::resolveInternalRef($node);
         }
     }
 
-    public function resolveExternalRef(
-        UriInterface $url,
-        JsonDocumentFactory $factory
-    ) {
-        switch (substr($url, -3)) {
+    public function resolveExternalRef(JsonNode $node)
+    {
+        switch (substr($node->{'$ref'}, -3)) {
             case 'foo':
                 return new \stdClass();
 
             case 'baz':
-                $newNode = parent::resolveExternalRef($url, $factory);
-                $newNode->comment = "Resolved from $url";
+                $newNode = parent::resolveExternalRef($node);
+                $newNode->comment = "Resolved from {$node->{'$ref'}}";
                 return $newNode;
 
             default:
-                return parent::resolveExternalRef($url, $factory);
+                return parent::resolveExternalRef($node);
         }
     }
 }
@@ -119,6 +115,7 @@ class ReferenceResolverTest extends TestCase
         self::checkStructure($jsonDoc2);
 
         $jsonDoc->getDocumentFactory();
+        $jsonDoc2->getDocumentFactory();
         $this->assertEquals($jsonDoc, $jsonDoc2);
 
         $jsonDoc2 = $jsonDoc2->resolveReferences();
@@ -188,6 +185,7 @@ class ReferenceResolverTest extends TestCase
         self::checkStructure($jsonDoc2);
 
         $jsonDoc->getDocumentFactory();
+        $jsonDoc2->getDocumentFactory();
         $this->assertEquals($jsonDoc, $jsonDoc2);
 
         $jsonDoc2 =
@@ -290,16 +288,13 @@ class ReferenceResolverTest extends TestCase
         );
 
         $this->assertSame(
-            'Resolved from /defs/baz',
+            'Resolved from #/defs/baz',
             $jsonDoc->getNode('/bar/bar/1/comment')
         );
     }
 
     public function testCustomResolveExternal()
     {
-        $barUrl = 'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::BAR_FILENAME);
-
         $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
@@ -319,7 +314,7 @@ class ReferenceResolverTest extends TestCase
         );
 
         $this->assertSame(
-            "Resolved from $barUrl#/defs/baz",
+            "Resolved from bar.json#/defs/baz",
             $jsonDoc->baz->comment
         );
     }
