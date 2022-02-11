@@ -8,35 +8,57 @@ use Psr\Http\Message\UriInterface;
 
 class MyReferenceResolver extends ReferenceResolver
 {
-    public function resolveInternalRef(JsonNode $node)
+    public function resolveInternalRef(JsonNode $node, ?int &$action)
     {
         switch (substr($node->{'$ref'}, -3)) {
             case 'foo':
-                return new \stdClass();
+                $action = self::SKIP;
+                return null;
+
+            case 'bar':
+                $action = self::STOP_RECURSION;
+
+                return JsonReferenceNode::newFromUri(
+                    'http://www.example.org#bar',
+                    $node->getBaseUri(),
+                    $node->getOwnerDocument(),
+                    $node->getJsonPtr()
+                );
 
             case 'baz':
-                $newNode = parent::resolveInternalRef($node);
+                $newNode = parent::resolveInternalRef($node, $action);
                 $newNode->comment = "Resolved from {$node->{'$ref'}}";
                 return $newNode;
 
             default:
-                return parent::resolveInternalRef($node);
+                return parent::resolveInternalRef($node, $action);
         }
     }
 
-    public function resolveExternalRef(JsonNode $node)
+    public function resolveExternalRef(JsonNode $node, ?int &$action)
     {
         switch (substr($node->{'$ref'}, -3)) {
             case 'foo':
-                return new \stdClass();
+                $action = self::SKIP;
+                return null;
+
+            case 'bar':
+                $action = self::STOP_RECURSION;
+
+                return JsonReferenceNode::newFromUri(
+                    'http://www.example.org#bar',
+                    $node->getBaseUri(),
+                    $node->getOwnerDocument(),
+                    $node->getJsonPtr()
+                );
 
             case 'baz':
-                $newNode = parent::resolveExternalRef($node);
+                $newNode = parent::resolveExternalRef($node, $action);
                 $newNode->comment = "Resolved from {$node->{'$ref'}}";
                 return $newNode;
 
             default:
-                return parent::resolveExternalRef($node);
+                return parent::resolveExternalRef($node, $action);
         }
     }
 }
@@ -280,11 +302,18 @@ class ReferenceResolverTest extends TestCase
             . str_replace(DIRECTORY_SEPARATOR, '/', self::BAR_FILENAME)
         );
 
-        $jsonDoc->resolveReferences(new MyReferenceResolver());
+        $jsonDoc->resolveReferences(
+            new MyReferenceResolver(ReferenceResolver::RESOLVE_INTERNAL)
+        );
 
         $this->assertSame(
             '#/defs/foo',
             $jsonDoc->getNode('/bar/foo/$ref')
+        );
+
+        $this->assertSame(
+            'http://www.example.org#bar',
+            $jsonDoc->getNode('/bar/bar/0/$ref')
         );
 
         $this->assertSame(
@@ -306,16 +335,23 @@ class ReferenceResolverTest extends TestCase
             )
         );
 
-        $jsonDoc->resolveReferences(new MyReferenceResolver());
+        $jsonDoc->resolveReferences(
+            new MyReferenceResolver(ReferenceResolver::RESOLVE_EXTERNAL)
+        );
 
         $this->assertSame(
             'bar.json#/defs/foo',
-            $jsonDoc->bar->{'$ref'}
+            $jsonDoc->x->{'$ref'}
+        );
+
+        $this->assertSame(
+            'http://www.example.org#bar',
+            $jsonDoc->y->{'$ref'}
         );
 
         $this->assertSame(
             "Resolved from bar.json#/defs/baz",
-            $jsonDoc->baz->comment
+            $jsonDoc->z->comment
         );
     }
 }

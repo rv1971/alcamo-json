@@ -15,6 +15,15 @@ class ReferenceResolver
     public const RESOLVE_EXTERNAL = 2; ///< Resolve refs outside the document
     public const RESOLVE_ALL      = 3; ///< Resolve all refs
 
+    /// Do not change the current node
+    public const SKIP = 1;
+
+    /// Replace node by new one but do not apply recursive resolution to it
+    public const STOP_RECURSION = 2;
+
+    /// Replace node by new one and continue recursive resolution
+    public const CONTINUE_RECURSION = 3;
+
     private $flags_;           ///< int
 
     /**
@@ -43,22 +52,26 @@ class ReferenceResolver
     /**
      * @brief Resolve an internal URL.
      *
-     * This implementation calls JsonDocument::getNode() to create a new node
-     * (which may be a JsonNode object, an array or a primitive type), and
-     * creates a deep copy of it if it is a JsonNode. Child classes may
-     * override this to
-     * - return a modified node (e.g. containing information about its
-     * source), or
-     * - return an empty stdClass object, in which case the containing node is
-     * not changed, i.e. the reference is not resolved. (Returning `null` for
-     * this purpose would be ambiguous because it could not be distinguished
-     * from an a reference that has been successfully resolved to a node whch
-     * is a JSON `null` item.)
+     * @param $node A node which is a JSON reference.
      *
-     * @warning When overriding this method to return a JsonNode from
-     * $ownerDocument, a deep copy must be created.
+     * @param[out] $action one of
+     * - @ref SKIP
+     * - @ref STOP_RECURSION
+     * - @ref CONTINUE_RECURSION
+     *
+     * This implementation calls JsonDocument::getNode() to create a new node
+     * (which may be a JsonNode object, an array or a primitive type), creates
+     * a deep copy of it if it is a JsonNode, and asks the caller to continue
+     * recursive resolution on the new node.
+     *
+     * Child classes may override this to return a modified node
+     * (e.g. containing information about its source), to leave the node
+     * unchanged, or to prevent further rercursion on this node.
+     *
+     * @warning When overriding this method to return a JsonNode from $node's
+     * owner document, a deep copy must be created.
      */
-    public function resolveInternalRef(JsonNode $node)
+    public function resolveInternalRef(JsonNode $node, ?int &$action)
     {
         $newNode =
             $node->getOwnerDocument()->getNode(substr($node->{'$ref'}, 1));
@@ -67,25 +80,34 @@ class ReferenceResolver
             $newNode = $newNode->createDeepCopy();
         }
 
+        $action = self::CONTINUE_RECURSION;
+
         return $newNode;
     }
 
     /**
      * @brief Resolve an external URL.
      *
+     * @param $node A node which is a JSON reference.
+     *
+     * @param[out] $action one of
+     * - @ref SKIP
+     * - @ref STOP_RECURSION
+     * - @ref CONTINUE_RECURSION
+     *
      * This implementation calls JsonDocumentFactory::createFromUrl() to
      * create a new node (which may be a JsonNode object, an array or a
-     * primitive type). Child classes may override this to
-     * - return a modified node (e.g. containing information about its
-     * source), or
-     * - return an empty stdClass object, in which case the containing node is
-     * not changed, i.e. the reference is not resolved. (Returning `null` for
-     * this purpose would be ambiguous because it could not be distinguished
-     * from an a reference that has been successfully resolved to a node whch
-     * is a JSON `null` item.)
+     * primitive type) and asks the caller to continue
+     * recursive resolution on the new node.
+     *
+     * Child classes may override this to return a modified node
+     * (e.g. containing information about its source), to leave the node
+     * unchanged, or to prevent further rercursion on this node.
      */
-    public function resolveExternalRef(JsonNode $node)
+    public function resolveExternalRef(JsonNode $node, ?int &$action)
     {
+        $action = self::CONTINUE_RECURSION;
+
         return $node->getOwnerDocument()->getDocumentFactory()
             ->createFromUrl($node->resolveUri($node->{'$ref'}));
     }
@@ -109,13 +131,16 @@ class ReferenceResolver
                 continue;
             }
 
+            // must be set by resolveInternalRef() or resolveExternalRef()
+            $action = null;
+
             switch (true) {
                 case $ref[0] == '#' && $flags & self::RESOLVE_INTERNAL:
                     $isExternal = false;
 
-                    $newNode = $this->resolveInternalRef($subNode);
+                    $newNode = $this->resolveInternalRef($subNode, $action);
 
-                    if ($newNode instanceof \stdClass) {
+                    if ($action == self::SKIP) {
                         continue 2;
                     }
 
@@ -130,9 +155,9 @@ class ReferenceResolver
                      * first be created as a standalone document and later be
                      * imported. */
 
-                    $newNode = $this->resolveExternalRef($subNode);
+                    $newNode = $this->resolveExternalRef($subNode, $action);
 
-                    if ($newNode instanceof \stdClass) {
+                    if ($action == self::SKIP) {
                         continue 2;
                     }
 
@@ -164,20 +189,24 @@ class ReferenceResolver
                 $nextHistory = clone $history;
                 $nextHistory->add([ $jsonPtr, $ref ]);
 
-                $newNode = $this->internalResolve(
-                    $newNode,
-                    $isExternal ? self::RESOLVE_ALL : $flags,
-                    $nextHistory
-                );
+                if ($action == self::CONTINUE_RECURSION) {
+                    $newNode = $this->internalResolve(
+                        $newNode,
+                        $isExternal ? self::RESOLVE_ALL : $flags,
+                        $nextHistory
+                    );
+                }
             } elseif (is_array($newNode)) {
                 $nextHistory = clone $history;
                 $nextHistory->add([ $jsonPtr, $ref ]);
 
-                $newNode = $this->resolveInArray(
-                    $newNode,
-                    $isExternal ? self::RESOLVE_ALL : $flags,
-                    $nextHistory
-                );
+                if ($action == self::CONTINUE_RECURSION) {
+                    $newNode = $this->resolveInArray(
+                        $newNode,
+                        $isExternal ? self::RESOLVE_ALL : $flags,
+                        $nextHistory
+                    );
+                }
             }
 
             /* COPY_UPON_IMPORT is necessary because the nodes might get a
