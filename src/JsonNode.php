@@ -326,9 +326,10 @@ class JsonNode
 
     /**
      * @param $resolver A ReferenceResolver object, or one of the
-     * ReferenceResolver constants
+     * ReferenceResolver constants which is the used to construct a
+     * ReferenceResolver object.
      *
-     * @warning Event though this method may modify $this, the return value
+     * @warning Even though this method may modify $this, the return value
      * may be different from $this and does not even need to be an object.
      */
     public function resolveReferences(

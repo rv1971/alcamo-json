@@ -4,7 +4,6 @@ namespace alcamo\json;
 
 use alcamo\exception\Recursion;
 use Ds\Set;
-use Psr\Http\Message\UriInterface;
 
 /**
  * @brief Resolver of JSON references
@@ -24,7 +23,7 @@ class ReferenceResolver
     /// Replace node by new one and continue recursive resolution
     public const CONTINUE_RECURSION = 3;
 
-    private $flags_;           ///< int
+    private $flags_; ///< int
 
     /**
      * @param $flags One of
@@ -39,7 +38,8 @@ class ReferenceResolver
 
     public function resolve(JsonNode $startNode)
     {
-        $result = $this->internalResolve($startNode, $this->flags_, new Set());
+        $result =
+            $this->resolveRecursively($startNode, $this->flags_, new Set());
 
         if ($result !== $startNode && $startNode->getJsonPtr() != '/') {
             $startNode->getOwnerDocument()
@@ -52,7 +52,7 @@ class ReferenceResolver
     /**
      * @brief Resolve an internal URL.
      *
-     * @param $node A node which is a JSON reference.
+     * @param $node A node which is an internal JSON reference.
      *
      * @param[out] $action one of
      * - @ref SKIP
@@ -66,12 +66,12 @@ class ReferenceResolver
      *
      * Child classes may override this to return a modified node
      * (e.g. containing information about its source), to leave the node
-     * unchanged, or to prevent further rercursion on this node.
+     * unchanged, or to prevent further recursion on this node.
      *
      * @warning When overriding this method to return a JsonNode from $node's
      * owner document, a deep copy must be created.
      */
-    public function resolveInternalRef(JsonNode $node, ?int &$action)
+    protected function resolveInternalRef(JsonNode $node, ?int &$action)
     {
         $newNode =
             $node->getOwnerDocument()->getNode(substr($node->{'$ref'}, 1));
@@ -102,18 +102,26 @@ class ReferenceResolver
      *
      * Child classes may override this to return a modified node
      * (e.g. containing information about its source), to leave the node
-     * unchanged, or to prevent further rercursion on this node.
+     * unchanged, or to prevent further recursion on this node.
      */
-    public function resolveExternalRef(JsonNode $node, ?int &$action)
+    protected function resolveExternalRef(JsonNode $node, ?int &$action)
     {
         $action = self::CONTINUE_RECURSION;
+
+        /* The new document must not be created in its final place in the
+         * existing document, because then it might be impossible to resolve
+         * references inside it. So it must first be created as a standalone
+         * document and later be imported. */
 
         return $node->getOwnerDocument()->getDocumentFactory()
             ->createFromUrl($node->resolveUri($node->{'$ref'}));
     }
 
-    private function internalResolve(JsonNode $node, int $flags, Set $history)
-    {
+    private function resolveRecursively(
+        JsonNode $node,
+        int $flags,
+        Set $history
+    ) {
         $walker =
             new RecursiveWalker($node, RecursiveWalker::JSON_OBJECTS_ONLY);
 
@@ -125,13 +133,14 @@ class ReferenceResolver
             $ref = $subNode->{'$ref'};
 
             /* In a JSON schema document, `$ref` might be a key that is being
-             * defined instead of indicating a reference object, in which case
-             * its value is an object rather than a string. */
+             * defined rather than indicating a reference object, in which
+             * case its value is an object rather than a string. */
             if (!is_string($ref)) {
                 continue;
             }
 
-            // must be set by resolveInternalRef() or resolveExternalRef()
+            /* Action must be set by resolveInternalRef() or
+               resolveExternalRef(). */
             $action = null;
 
             switch (true) {
@@ -148,12 +157,6 @@ class ReferenceResolver
 
                 case $ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL:
                     $isExternal = true;
-
-                    /* The new document must not be created in its final place
-                     * in the existing document, because then it might be
-                     * impossible to resolve references inside it. So it must
-                     * first be created as a standalone document and later be
-                     * imported. */
 
                     $newNode = $this->resolveExternalRef($subNode, $action);
 
@@ -173,13 +176,14 @@ class ReferenceResolver
                         'atUri' =>
                         "{$node->getOwnerDocument()->getUri()}#$jsonPtr",
                         'extraMessage' =>
-                        "attempting to resolve \"$ref\" for the second time"
+                        "attempting to resolve \"$ref\" at \"$jsonPtr\" "
+                        . "for the second time"
                     ]
                 );
             }
 
             /* When importing an external node, any internal references in
-             * that node must be resolved even when not requested by $flags
+             * that node must be resolved even when not requested by $flags,
              * because after import this might not be possible any more. Even
              * when an entire external JSON document is imported, the JSON
              * pointers do not work any more after import into a place which
@@ -190,7 +194,7 @@ class ReferenceResolver
                 $nextHistory->add([ $jsonPtr, $ref ]);
 
                 if ($action == self::CONTINUE_RECURSION) {
-                    $newNode = $this->internalResolve(
+                    $newNode = $this->resolveRecursively(
                         $newNode,
                         $isExternal ? self::RESOLVE_ALL : $flags,
                         $nextHistory
@@ -239,7 +243,7 @@ class ReferenceResolver
 
         foreach ($walker as $subNode) {
             $walker->replaceCurrent(
-                $this->internalResolve($subNode, $flags, $history)
+                $this->resolveRecursively($subNode, $flags, $history)
             );
 
             $walker->skipChildren();
