@@ -5,8 +5,9 @@
     "license": "Apache-2.0",
     "require": {
         "php": "7.3 - 8.0",
-        "alcamo/core": "^0.4",
-        "alcamo/exception": "^0.1"
+        "php-ds/php-ds": "^1.3",
+        "alcamo/exception": "^0.1",
+        "alcamo/uri": "^0.1"
     },
     "autoload": {
 	"psr-4": {

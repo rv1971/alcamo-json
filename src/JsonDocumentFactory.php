@@ -3,7 +3,7 @@
 namespace alcamo\json;
 
 use alcamo\exception\{ExceptionInterface, SyntaxError};
-use alcamo\ietf\Uri;
+use alcamo\uri\Uri;
 use Psr\Http\Message\UriInterface;
 
 /**

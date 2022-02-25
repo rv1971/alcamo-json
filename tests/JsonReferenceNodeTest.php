@@ -2,7 +2,7 @@
 
 namespace alcamo\json;
 
-use alcamo\ietf\UriFactory;
+use alcamo\uri\FileUriFactory;
 use PHPUnit\Framework\TestCase;
 
 class JsonReferenceNodeTest extends TestCase
@@ -14,7 +14,7 @@ class JsonReferenceNodeTest extends TestCase
         $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
-            (new UriFactory())->createFromFilesystemPath(self::FOO_FILENAME)
+            (new FileUriFactory())->create(self::FOO_FILENAME)
         );
 
         $refNode = JsonReferenceNode::newFromUri(

@@ -110,7 +110,7 @@ class JsonDocumentTest extends TestCase
 
         $this->expectException(SyntaxError::class);
         $this->expectExceptionMessage(
-            'Syntax error in "foo" at offset 0 ("foo") at URI <alcamo\ietf\Uri>"file:/'
+            'Syntax error in "foo" at offset 0 ("foo") at URI <alcamo\uri\Uri>"file:/'
         );
         $this->expectExceptionMessage(
             '"; not a valid JSON pointer'
