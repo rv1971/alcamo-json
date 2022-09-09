@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<s:document xmlns:s="tag:rv1971@web.de,2021:alcamo-json:j2d/structure" xmlns="tag:rv1971@web.de,2021:alcamo-json:j2d/object" xml:base="json2dom/objects.json">
+  <foo jsonPtr="/foo" xml:id="foo">
+    <title jsonPtr="/foo/title" xml:id="foo.title">Foo</title>
+    <content jsonPtr="/foo/content" xml:id="foo.content">Lorem ipsum</content>
+  </foo>
+  <bar jsonPtr="/bar" xml:id="bar">
+    <_1 jsonPtr="/bar/1" xml:id="bar.1">1</_1>
+    <_-42 jsonPtr="/bar/-42" xml:id="bar.-42">-42</_-42>
+    <_--.- jsonPtr="/bar/()~1#" xml:id="bar.---1-">
+      <_b_az_ jsonPtr="/bar/()~1#/ b az " xml:id="bar.---1-._b_az_"> At vero eos et  accusam et justo duo dolores et ea rebum. </_b_az_>
+    </_--.->
+  </bar>
+</s:document>

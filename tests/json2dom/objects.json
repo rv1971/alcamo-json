@@ -1,0 +1,13 @@
+{
+    "foo": {
+        "title": "Foo",
+        "content": "Lorem ipsum"
+    },
+    "bar": {
+        "1": 1,
+        "-42": -42,
+        "()/#": {
+            " b az ": " At vero eos et  accusam et justo duo dolores et ea rebum. "
+        }
+    }
+}

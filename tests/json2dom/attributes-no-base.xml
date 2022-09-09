@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<s:document xmlns:s="tag:rv1971@web.de,2021:alcamo-json:j2d/structure" xmlns="tag:rv1971@web.de,2021:alcamo-json:j2d/object">
+  <string jsonPtr="/string" xml:id="string">Lorem ipsum</string>
+  <integer jsonPtr="/integer" xml:id="integer">42</integer>
+  <number jsonPtr="/number" xml:id="number">3.14</number>
+  <boolean-true jsonPtr="/boolean-true" xml:id="boolean-true">true</boolean-true>
+  <boolean-false jsonPtr="/boolean-false" xml:id="boolean-false">false</boolean-false>
+  <null jsonPtr="/null" xml:id="null"/>
+</s:document>

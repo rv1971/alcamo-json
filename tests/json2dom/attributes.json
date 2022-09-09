@@ -1,0 +1,8 @@
+{
+    "string": "Lorem ipsum",
+    "integer": 42,
+    "number": 3.14,
+    "boolean-true": true,
+    "boolean-false": false,
+    "null": null
+}

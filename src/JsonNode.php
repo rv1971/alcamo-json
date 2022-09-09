@@ -26,6 +26,14 @@ class JsonNode
     private $ownerDocument_;   ///< self
     private $jsonPtr_;         ///< string
 
+    public static function composeJsonPtr(
+        string $jsonPtr,
+        string $prop
+    ): string {
+        return ($jsonPtr == '/' ? '/' : "$jsonPtr/")
+            . str_replace([ '~', '/' ], [ '~0', '~1' ], $prop);
+    }
+
     /**
      * @brief Construct from object or iterable, creating a public property
      * for each key
@@ -62,10 +70,10 @@ class JsonNode
                 }
             }
         } else {
-            foreach ($data as $subKey => $value) {
-                $this->$subKey = $this->createNode(
+            foreach ($data as $prop => $value) {
+                $this->$prop = $this->createNode(
                     ($this->jsonPtr_ == '/' ? '/' : "$this->jsonPtr_/")
-                    . str_replace([ '~', '/' ], [ '~0', '~1' ], $subKey),
+                    . str_replace([ '~', '/' ], [ '~0', '~1' ], $prop),
                     $value
                 );
             }
@@ -188,9 +196,9 @@ class JsonNode
                     && array_keys($value) === range(0, count($value) - 1)):
                 $result = [];
 
-                foreach ($value as $subKey => $subValue) {
+                foreach ($value as $prop => $subValue) {
                     $result[] =
-                        $this->createNode("$jsonPtr/$subKey", $subValue);
+                        $this->createNode("$jsonPtr/$prop", $subValue);
                 }
 
                 return $result;
