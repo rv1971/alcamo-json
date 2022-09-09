@@ -6,20 +6,20 @@
     <s:item jsonPtr="/foo/2">7</s:item>
     <s:item jsonPtr="/foo/3">11</s:item>
   </foo>
-  <bar jsonPtr="/bar">
-    <s:item jsonPtr="/bar/0">
-      <baz jsonPtr="/bar/0/baz">true</baz>
-      <empty-array jsonPtr="/bar/0/empty-array"/>
-      <empty-object jsonPtr="/bar/0/empty-object"/>
+  <_-bar name="+bar" jsonPtr="/+bar">
+    <s:item jsonPtr="/+bar/0">
+      <baz jsonPtr="/+bar/0/baz">true</baz>
+      <empty-array jsonPtr="/+bar/0/empty-array"/>
+      <empty-object jsonPtr="/+bar/0/empty-object"/>
     </s:item>
-    <s:item jsonPtr="/bar/1">
-      <s:item jsonPtr="/bar/1/0">
-        <qux jsonPtr="/bar/1/0/qux">QUX</qux>
+    <s:item jsonPtr="/+bar/1">
+      <s:item jsonPtr="/+bar/1/0">
+        <qux jsonPtr="/+bar/1/0/qux">QUX</qux>
       </s:item>
-      <s:item jsonPtr="/bar/1/1">corge</s:item>
-      <s:item jsonPtr="/bar/1/2">false</s:item>
-      <s:item jsonPtr="/bar/1/3"/>
+      <s:item jsonPtr="/+bar/1/1">corge</s:item>
+      <s:item jsonPtr="/+bar/1/2">false</s:item>
+      <s:item jsonPtr="/+bar/1/3"/>
     </s:item>
-    <s:item jsonPtr="/bar/2"/>
-  </bar>
+    <s:item jsonPtr="/+bar/2"/>
+  </_-bar>
 </s:document>

@@ -9,7 +9,7 @@ use alcamo\exception\SyntaxError;
  *
  * - Properties whose value are JSON objects are converted to DOM elements
  *   whose namespace is @ref OBJECT_NS and whose local name is the name of the
- *   JSON property converted by $jsonProp2localName().
+ *   JSON property converted by jsonProp2localName().
  * - In properties whose value are arrays:
  *   - Sub-objects are converted to <s:item> elements where s resolves to the
  *     @ref STRUCTURE_NS namespace.
@@ -17,7 +17,10 @@ use alcamo\exception\SyntaxError;
  *   - Sub-arrays are converted accordingly.
  * - All other properties are converted to attributes without namespace whose
  *   local name is the name of the JSON property converted by
- *   $jsonProp2localName().
+ *   jsonProp2localName().
+ *
+ * When a tag name craeetd by jsonProp2localName() difefrs from the property,
+ * the element also has an attribute `name`taht tells the original property.
  *
  * @warning The result does not distinguish between empty arrays and empyt
  * objects.
@@ -83,11 +86,16 @@ class Json2Dom
         \DOMNode $domNode,
         JsonNode $jsonNode,
         string $nsName,
-        string $qName
+        string $qName,
+        ?string $origName = null
     ): void {
         $child = isset($domNode->ownerDocument)
             ? $domNode->ownerDocument->createElementNS($nsName, $qName)
             : $domNode->documentElement;
+
+        if (isset($origName)) {
+            $child->setAttribute('name', $origName);
+        }
 
         if ($jsonNode->getJsonPtr() != '/') {
             if ($this->flags_ & self::JSON_PTR_ATTRS) {
@@ -108,13 +116,16 @@ class Json2Dom
         foreach ($jsonNode as $prop => $value) {
             $localName = $this->jsonProp2localName($prop);
 
+            $origName = ($localName != $prop) ? $prop : null;
+
             switch (true) {
                 case is_object($value):
                     $this->appendJsonNode(
                         $child,
                         $value,
                         static::OBJECT_NS,
-                        $localName
+                        $localName,
+                        $origName
                     );
                     break;
 
@@ -124,7 +135,11 @@ class Json2Dom
                         $value,
                         static::OBJECT_NS,
                         $localName,
-                        JsonNode::composeJsonPtr($jsonNode->getJsonPtr(), $prop)
+                        JsonNode::composeJsonPtr(
+                            $jsonNode->getJsonPtr(),
+                            $prop
+                        ),
+                        $origName
                     );
                     break;
 
@@ -134,7 +149,11 @@ class Json2Dom
                         $value,
                         static::OBJECT_NS,
                         $localName,
-                        JsonNode::composeJsonPtr($jsonNode->getJsonPtr(), $prop)
+                        JsonNode::composeJsonPtr(
+                            $jsonNode->getJsonPtr(),
+                            $prop
+                        ),
+                        $origName
                     );
             }
         }
@@ -145,9 +164,14 @@ class Json2Dom
         array $jsonArray,
         string $nsName,
         string $qName,
-        string $jsonPtr
+        string $jsonPtr,
+        ?string $origName = null
     ): void {
         $child = $domNode->ownerDocument->createElementNS($nsName, $qName);
+
+        if (isset($origName)) {
+            $child->setAttribute('name', $origName);
+        }
 
         $domNode->appendChild($child);
 
@@ -201,13 +225,18 @@ class Json2Dom
         $value,
         string $nsName,
         string $localName,
-        string $jsonPtr
+        string $jsonPtr,
+        ?string $origName = null
     ): void {
         $child = $domNode->ownerDocument->createElementNS(
             $nsName,
             $localName,
             is_bool($value) ? ['false', 'true'][(int)$value] : $value
         );
+
+        if (isset($origName)) {
+            $child->setAttribute('name', $origName);
+        }
 
         $domNode->appendChild($child);
 

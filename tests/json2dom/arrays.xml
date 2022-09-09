@@ -6,20 +6,20 @@
     <s:item jsonPtr="/foo/2" xml:id="foo.2">7</s:item>
     <s:item jsonPtr="/foo/3" xml:id="foo.3">11</s:item>
   </foo>
-  <bar jsonPtr="/bar" xml:id="bar">
-    <s:item jsonPtr="/bar/0" xml:id="bar.0">
-      <baz jsonPtr="/bar/0/baz" xml:id="bar.0.baz">true</baz>
-      <empty-array jsonPtr="/bar/0/empty-array" xml:id="bar.0.empty-array"/>
-      <empty-object jsonPtr="/bar/0/empty-object" xml:id="bar.0.empty-object"/>
+  <_-bar name="+bar" jsonPtr="/+bar" xml:id="_-bar">
+    <s:item jsonPtr="/+bar/0" xml:id="_-bar.0">
+      <baz jsonPtr="/+bar/0/baz" xml:id="_-bar.0.baz">true</baz>
+      <empty-array jsonPtr="/+bar/0/empty-array" xml:id="_-bar.0.empty-array"/>
+      <empty-object jsonPtr="/+bar/0/empty-object" xml:id="_-bar.0.empty-object"/>
     </s:item>
-    <s:item jsonPtr="/bar/1" xml:id="bar.1">
-      <s:item jsonPtr="/bar/1/0" xml:id="bar.1.0">
-        <qux jsonPtr="/bar/1/0/qux" xml:id="bar.1.0.qux">QUX</qux>
+    <s:item jsonPtr="/+bar/1" xml:id="_-bar.1">
+      <s:item jsonPtr="/+bar/1/0" xml:id="_-bar.1.0">
+        <qux jsonPtr="/+bar/1/0/qux" xml:id="_-bar.1.0.qux">QUX</qux>
       </s:item>
-      <s:item jsonPtr="/bar/1/1" xml:id="bar.1.1">corge</s:item>
-      <s:item jsonPtr="/bar/1/2" xml:id="bar.1.2">false</s:item>
-      <s:item jsonPtr="/bar/1/3" xml:id="bar.1.3"/>
+      <s:item jsonPtr="/+bar/1/1" xml:id="_-bar.1.1">corge</s:item>
+      <s:item jsonPtr="/+bar/1/2" xml:id="_-bar.1.2">false</s:item>
+      <s:item jsonPtr="/+bar/1/3" xml:id="_-bar.1.3"/>
     </s:item>
-    <s:item jsonPtr="/bar/2" xml:id="bar.2"/>
-  </bar>
+    <s:item jsonPtr="/+bar/2" xml:id="_-bar.2"/>
+  </_-bar>
 </s:document>
