@@ -3,6 +3,6 @@
 
 namespace alcamo\json;
 
-require dirname(__DIR__) . '/vendor/autoload.php';
+include $_composer_autoload_path ?? __DIR__ . '/../vendor/autoload.php';
 
 (new Json2DomCli())->process();
