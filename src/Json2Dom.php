@@ -53,14 +53,20 @@ class Json2Dom
     {
         $domDocument = new \DOMDocument();
 
+        /* Loading a DOM tree from XML is the only known method to add the
+         * default namespace to the document element. */
+        $domDocument->loadXML(
+            '<?xml version="1.0"?><s:document xmlns="'
+            . static::OBJECT_NS . '" xmlns:s="'
+            . static::STRUCTURE_NS . '"/>'
+        );
+
         $this->appendJsonNode(
             $domDocument,
             $jsonDocument,
             static::STRUCTURE_NS,
             's:' . static::DOCUMENT_LOCAL_NAME
         );
-
-        $domDocument->documentElement->setAttribute('xmlns', static::OBJECT_NS);
 
         if ($jsonDocument->getBaseUri() !== null) {
             $domDocument->documentElement->setAttributeNS(
@@ -79,10 +85,9 @@ class Json2Dom
         string $nsName,
         string $qName
     ): void {
-        $child = $nsName == static::OBJECT_NS
-            ? ($domNode->ownerDocument ?? $domNode)->createElement($qName)
-            : ($domNode->ownerDocument ?? $domNode)
-            ->createElementNS($nsName, $qName);
+        $child = isset($domNode->ownerDocument)
+            ? $domNode->ownerDocument->createElementNS($nsName, $qName)
+            : $domNode->documentElement;
 
         if ($jsonNode->getJsonPtr() != '/') {
             if ($this->flags_ & self::JSON_PTR_ATTRS) {
@@ -198,7 +203,8 @@ class Json2Dom
         string $localName,
         string $jsonPtr
     ): void {
-        $child = $domNode->ownerDocument->createElement(
+        $child = $domNode->ownerDocument->createElementNS(
+            $nsName,
             $localName,
             is_bool($value) ? ['false', 'true'][(int)$value] : $value
         );

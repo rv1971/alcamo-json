@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<s:document xmlns:s="tag:rv1971@web.de,2021:alcamo-json:j2d/structure" xmlns="tag:rv1971@web.de,2021:alcamo-json:j2d/object" xml:base="json2dom/objects.json">
+<s:document xmlns="tag:rv1971@web.de,2021:alcamo-json:j2d/object" xmlns:s="tag:rv1971@web.de,2021:alcamo-json:j2d/structure" xml:base="json2dom/objects.json">
   <foo jsonPtr="/foo" xml:id="foo">
     <title jsonPtr="/foo/title" xml:id="foo.title">Foo</title>
     <content jsonPtr="/foo/content" xml:id="foo.content">Lorem ipsum</content>

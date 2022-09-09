@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
-<s:document xmlns:s="tag:rv1971@web.de,2021:alcamo-json:j2d/structure" xmlns="tag:rv1971@web.de,2021:alcamo-json:j2d/object" xml:base="json2dom/arrays.json">
-  <foo xmlns="tag:rv1971@web.de,2021:alcamo-json:j2d/object" jsonPtr="/foo" xml:id="foo">
+<s:document xmlns="tag:rv1971@web.de,2021:alcamo-json:j2d/object" xmlns:s="tag:rv1971@web.de,2021:alcamo-json:j2d/structure" xml:base="json2dom/arrays.json">
+  <foo jsonPtr="/foo" xml:id="foo">
     <s:item jsonPtr="/foo/0" xml:id="foo.0">3</s:item>
     <s:item jsonPtr="/foo/1" xml:id="foo.1">5</s:item>
     <s:item jsonPtr="/foo/2" xml:id="foo.2">7</s:item>
     <s:item jsonPtr="/foo/3" xml:id="foo.3">11</s:item>
   </foo>
-  <bar xmlns="tag:rv1971@web.de,2021:alcamo-json:j2d/object" jsonPtr="/bar" xml:id="bar">
+  <bar jsonPtr="/bar" xml:id="bar">
     <s:item jsonPtr="/bar/0" xml:id="bar.0">
       <baz jsonPtr="/bar/0/baz" xml:id="bar.0.baz">true</baz>
       <empty-array jsonPtr="/bar/0/empty-array" xml:id="bar.0.empty-array"/>
