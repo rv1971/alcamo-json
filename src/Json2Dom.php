@@ -59,15 +59,7 @@ class Json2Dom
 
     public function convert(JsonNode $jsonNode): \DOMDocument
     {
-        $domDocument = new \DOMDocument();
-
-        /* Loading a DOM tree from XML is the only known method to add the
-         * default namespace to the document element. */
-        $domDocument->loadXML(
-            '<?xml version="1.0"?><s:document xmlns="'
-            . static::OBJECT_NS . '" xmlns:s="'
-            . static::STRUCTURE_NS . '"/>'
-        );
+        $domDocument = $this->createDocumentRoot();
 
         $this->appendJsonNode(
             $domDocument,
@@ -266,6 +258,21 @@ class Json2Dom
         /** Apply jsonProp2localName() to whatever follows the initial
          *  slash. */
         return $this->jsonProp2localName(substr($jsonPtr, 1));
+    }
+
+    protected function createDocumentRoot(): \DOMDocument
+    {
+        $domDocument = new \DOMDocument();
+
+        /* Loading a DOM tree from XML is the only known method to add the
+         * default namespace to the document element. */
+        $domDocument->loadXML(
+            '<?xml version="1.0"?><s:document xmlns="'
+            . static::OBJECT_NS . '" xmlns:s="'
+            . static::STRUCTURE_NS . '"/>'
+        );
+
+        return $domDocument;
     }
 
     protected function addAttributes(
