@@ -98,25 +98,11 @@ class Json2Dom
             ? $domNode->ownerDocument->createElementNS($nsName, $qName)
             : $domNode->documentElement;
 
-        if (isset($origName)) {
-            $child->setAttribute('name', $origName);
+        $this->addAttributes($child, $jsonNode->getJsonPtr(), $origName);
+
+        if (isset($domNode->ownerDocument)) {
+            $domNode->appendChild($child);
         }
-
-        if ($jsonNode->getJsonPtr() != '/') {
-            if ($this->flags_ & self::JSON_PTR_ATTRS) {
-                $child->setAttribute('jsonPtr', $jsonNode->getJsonPtr());
-            }
-
-            if ($this->flags_ & self::XML_ID_ATTRS) {
-                $child->setAttributeNS(
-                    self::XML_NS,
-                    'xml:id',
-                    $this->jsonPtr2XmlId($jsonNode->getJsonPtr())
-                );
-            }
-        }
-
-        $domNode->appendChild($child);
 
         foreach ($jsonNode as $prop => $value) {
             $localName = $this->jsonProp2localName($prop);
@@ -174,23 +160,9 @@ class Json2Dom
     ): void {
         $child = $domNode->ownerDocument->createElementNS($nsName, $qName);
 
-        if (isset($origName)) {
-            $child->setAttribute('name', $origName);
-        }
-
         $domNode->appendChild($child);
 
-        if ($this->flags_ & self::JSON_PTR_ATTRS) {
-            $child->setAttribute('jsonPtr', $jsonPtr);
-        }
-
-        if ($this->flags_ & self::XML_ID_ATTRS) {
-            $child->setAttributeNS(
-                self::XML_NS,
-                'xml:id',
-                $this->jsonPtr2XmlId($jsonPtr)
-            );
-        }
+        $this->addAttributes($child, $jsonPtr, $origName);
 
         foreach ($jsonArray as $pos => $item) {
             switch (true) {
@@ -239,23 +211,9 @@ class Json2Dom
             is_bool($value) ? ['false', 'true'][(int)$value] : $value
         );
 
-        if (isset($origName)) {
-            $child->setAttribute('name', $origName);
-        }
-
         $domNode->appendChild($child);
 
-        if ($this->flags_ & self::JSON_PTR_ATTRS) {
-            $child->setAttribute('jsonPtr', $jsonPtr);
-        }
-
-        if ($this->flags_ & self::XML_ID_ATTRS) {
-            $child->setAttributeNS(
-                self::XML_NS,
-                'xml:id',
-                $this->jsonPtr2XmlId($jsonPtr)
-            );
-        }
+        $this->addAttributes($child, $jsonPtr, $origName);
     }
 
     /**
@@ -308,5 +266,29 @@ class Json2Dom
         /** Apply jsonProp2localName() to whatever follows the initial
          *  slash. */
         return $this->jsonProp2localName(substr($jsonPtr, 1));
+    }
+
+    protected function addAttributes(
+        \DOMNode $domNode,
+        ?string $jsonPtr,
+        ?string $origName = null
+    ): void {
+        if (isset($origName)) {
+            $domNode->setAttribute('name', $origName);
+        }
+
+        if ($jsonPtr != '/') {
+            if ($this->flags_ & self::JSON_PTR_ATTRS) {
+                $domNode->setAttribute('jsonPtr', $jsonPtr);
+            }
+
+            if ($this->flags_ & self::XML_ID_ATTRS) {
+                $domNode->setAttributeNS(
+                    self::XML_NS,
+                    'xml:id',
+                    $this->jsonPtr2XmlId($jsonPtr)
+                );
+            }
+        }
     }
 }
