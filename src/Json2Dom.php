@@ -52,7 +52,7 @@ class Json2Dom
         $this->flags_ = $flags;
     }
 
-    public function convert(JsonDocumentInterface $jsonDocument): \DOMDocument
+    public function convert(JsonNode $jsonNode): \DOMDocument
     {
         $domDocument = new \DOMDocument();
 
@@ -66,16 +66,16 @@ class Json2Dom
 
         $this->appendJsonNode(
             $domDocument,
-            $jsonDocument,
+            $jsonNode,
             static::STRUCTURE_NS,
             's:' . static::DOCUMENT_LOCAL_NAME
         );
 
-        if ($jsonDocument->getBaseUri() !== null) {
+        if ($jsonNode->getBaseUri() !== null) {
             $domDocument->documentElement->setAttributeNS(
                 self::XML_NS,
                 'xml:base',
-                $jsonDocument->getBaseUri()
+                $jsonNode->getBaseUri()
             );
         }
 
