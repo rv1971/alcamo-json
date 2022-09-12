@@ -47,9 +47,14 @@ class Json2Dom
 
     private $flags_;
 
-    public function __construct(int $flags = null)
+    public function __construct(?int $flags = null)
     {
-        $this->flags_ = $flags;
+        $this->flags_ = (int)$flags;
+    }
+
+    public function getFlags(): int
+    {
+        return $this->flags_;
     }
 
     public function convert(JsonNode $jsonNode): \DOMDocument
