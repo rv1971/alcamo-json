@@ -132,6 +132,32 @@ class Json2DomTest extends TestCase
         );
     }
 
+    public function testConvertAlwaysNames(): void
+    {
+        $jsonDocument = (new JsonDocumentFactory())->createFromUrl(
+            'json2dom' . DIRECTORY_SEPARATOR . 'arrays.json'
+        );
+
+        $domDocument = new \DOMDocument();
+
+        $domDocument->load(
+            'json2dom' . DIRECTORY_SEPARATOR . 'arrays-always-name.xml',
+            LIBXML_NOBLANKS
+        );
+
+        $domDocument->formatOutput = true;
+
+        $domDocument2 =
+            (new Json2Dom(Json2Dom::ALWAYS_NAME_ATTR))->convert($jsonDocument);
+
+        $domDocument2->formatOutput = true;
+
+        $this->assertSame(
+            $domDocument->saveXML(),
+            $domDocument2->saveXML()
+        );
+    }
+
     public function testJsonPtr2XmlIdException(): void
     {
         $this->expectException(SyntaxError::class);

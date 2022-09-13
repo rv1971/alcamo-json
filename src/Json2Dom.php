@@ -19,7 +19,7 @@ use alcamo\exception\SyntaxError;
  *   local name is the name of the JSON property converted by
  *   jsonProp2localName().
  *
- * When a tag name craeetd by jsonProp2localName() difefrs from the property,
+ * When a tag name created by jsonProp2localName() differs from the property,
  * the element also has an attribute `name`taht tells the original property.
  *
  * @warning The result does not distinguish between empty arrays and empyt
@@ -42,8 +42,9 @@ class Json2Dom
     /// Local name of the document element
     public const DOCUMENT_LOCAL_NAME = 'document';
 
-    public const JSON_PTR_ATTRS = 1; ///< Flag value to add jsonPtr attributes
-    public const XML_ID_ATTRS = 2;   ///< Flag value to add xml:id attributes
+    public const JSON_PTR_ATTRS = 1;   ///< Flag to add jsonPtr attributes
+    public const XML_ID_ATTRS = 2;     ///< Flag to add xml:id attributes
+    public const ALWAYS_NAME_ATTR = 4; ///< Flag to always add name attributes
 
     private $flags_;
 
@@ -282,6 +283,11 @@ class Json2Dom
     ): void {
         if (isset($origName)) {
             $domNode->setAttribute('name', $origName);
+        } elseif (
+            $domNode->namespaceURI == static::OBJECT_NS
+            && ($this->flags_ & self::ALWAYS_NAME_ATTR)
+        ) {
+            $domNode->setAttribute('name', $domNode->localName);
         }
 
         if ($jsonPtr != '/') {

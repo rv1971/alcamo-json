@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<s:document xmlns="tag:rv1971@web.de,2021:alcamo-json:j2d/object" xmlns:s="tag:rv1971@web.de,2021:alcamo-json:j2d/structure" xml:base="json2dom/arrays.json">
+  <foo name="foo">
+    <s:item>3</s:item>
+    <s:item>5</s:item>
+    <s:item>7</s:item>
+    <s:item>11</s:item>
+  </foo>
+  <_-bar name="+bar">
+    <s:item>
+      <baz name="baz">true</baz>
+      <empty-array name="empty-array"/>
+      <empty-object name="empty-object"/>
+    </s:item>
+    <s:item>
+      <s:item>
+        <qux name="qux">QUX</qux>
+      </s:item>
+      <s:item>corge</s:item>
+      <s:item>false</s:item>
+      <s:item/>
+    </s:item>
+    <s:item/>
+  </_-bar>
+</s:document>
