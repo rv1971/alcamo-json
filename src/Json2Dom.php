@@ -42,9 +42,9 @@ class Json2Dom
     /// Local name of the document element
     public const DOCUMENT_LOCAL_NAME = 'document';
 
-    public const JSON_PTR_ATTRS = 1;   ///< Flag to add jsonPtr attributes
-    public const XML_ID_ATTRS = 2;     ///< Flag to add xml:id attributes
-    public const ALWAYS_NAME_ATTR = 4; ///< Flag to always add name attributes
+    public const JSON_PTR_ATTRS = 1;    ///< Flag to add jsonPtr attributes
+    public const XML_ID_ATTRS = 2;      ///< Flag to add xml:id attributes
+    public const ALWAYS_NAME_ATTRS = 4; ///< Flag to always add name attributes
 
     private $flags_;
 
@@ -285,7 +285,7 @@ class Json2Dom
             $domNode->setAttribute('name', $origName);
         } elseif (
             $domNode->namespaceURI == static::OBJECT_NS
-            && ($this->flags_ & self::ALWAYS_NAME_ATTR)
+            && ($this->flags_ & self::ALWAYS_NAME_ATTRS)
         ) {
             $domNode->setAttribute('name', $domNode->localName);
         }

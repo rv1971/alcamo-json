@@ -148,7 +148,7 @@ class Json2DomTest extends TestCase
         $domDocument->formatOutput = true;
 
         $domDocument2 =
-            (new Json2Dom(Json2Dom::ALWAYS_NAME_ATTR))->convert($jsonDocument);
+            (new Json2Dom(Json2Dom::ALWAYS_NAME_ATTRS))->convert($jsonDocument);
 
         $domDocument2->formatOutput = true;
 
