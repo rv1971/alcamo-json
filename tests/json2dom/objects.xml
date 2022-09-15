@@ -5,8 +5,8 @@
     <content jsonPtr="/foo/content" xml:id="foo.content">Lorem ipsum</content>
   </foo>
   <bar jsonPtr="/bar" xml:id="bar">
-    <_1 name="1" jsonPtr="/bar/1" xml:id="bar.1">1</_1>
-    <_-42 name="-42" jsonPtr="/bar/-42" xml:id="bar.-42">-42</_-42>
+    <_1 name="1" type="integer" jsonPtr="/bar/1" xml:id="bar.1">1</_1>
+    <_-42 name="-42" type="integer" jsonPtr="/bar/-42" xml:id="bar.-42">-42</_-42>
     <_--.- name="()/#" jsonPtr="/bar/()~1#" xml:id="bar.---1-">
       <_b_az_ name=" b az " jsonPtr="/bar/()~1#/ b az " xml:id="bar.---1-._b_az_"> At vero eos et  accusam et justo duo dolores et ea rebum. </_b_az_>
     </_--.->

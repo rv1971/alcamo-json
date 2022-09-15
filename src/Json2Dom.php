@@ -46,6 +46,16 @@ class Json2Dom
     public const XML_ID_ATTRS = 2;      ///< Flag to add xml:id attributes
     public const ALWAYS_NAME_ATTRS = 4; ///< Flag to always add name attributes
 
+    public const PHP_TYPE_2_JSON_TYPE = [
+        'boolean' => 'boolean',
+        'integer' => 'integer',
+        'double' => 'number',
+        'string' => 'string',
+        'array' => 'array',
+        'object' => 'object',
+        'NULL' => 'null'
+    ];
+
     private $flags_;
 
     public function __construct(?int $flags = null)
@@ -91,7 +101,12 @@ class Json2Dom
             ? $domNode->ownerDocument->createElementNS($nsName, $qName)
             : $domNode->documentElement;
 
-        $this->addAttributes($child, $jsonNode->getJsonPtr(), $origName);
+        $this->addAttributes(
+            $child,
+            $jsonNode,
+            $jsonNode->getJsonPtr(),
+            $origName
+        );
 
         if (isset($domNode->ownerDocument)) {
             $domNode->appendChild($child);
@@ -155,7 +170,7 @@ class Json2Dom
 
         $domNode->appendChild($child);
 
-        $this->addAttributes($child, $jsonPtr, $origName);
+        $this->addAttributes($child, $jsonArray, $jsonPtr, $origName);
 
         foreach ($jsonArray as $pos => $item) {
             switch (true) {
@@ -206,7 +221,7 @@ class Json2Dom
 
         $domNode->appendChild($child);
 
-        $this->addAttributes($child, $jsonPtr, $origName);
+        $this->addAttributes($child, $value, $jsonPtr, $origName);
     }
 
     /**
@@ -278,6 +293,7 @@ class Json2Dom
 
     protected function addAttributes(
         \DOMNode $domNode,
+        $value,
         ?string $jsonPtr,
         ?string $origName = null
     ): void {
@@ -288,6 +304,14 @@ class Json2Dom
             && ($this->flags_ & self::ALWAYS_NAME_ATTRS)
         ) {
             $domNode->setAttribute('name', $domNode->localName);
+        }
+
+        $jsonType = static::PHP_TYPE_2_JSON_TYPE[gettype($value)];
+
+        /** Add a `type` only if the type information would otherwise get
+         *  lost. */
+        if (!in_array($jsonType, [ 'array', 'object', 'string' ])) {
+            $domNode->setAttribute('type', $jsonType);
         }
 
         if ($jsonPtr != '/') {
