@@ -308,11 +308,7 @@ class Json2Dom
 
         $jsonType = static::PHP_TYPE_2_JSON_TYPE[gettype($value)];
 
-        /** Add a `type` only if the type information would otherwise get
-         *  lost. */
-        if (!in_array($jsonType, [ 'array', 'object', 'string' ])) {
-            $domNode->setAttribute('type', $jsonType);
-        }
+        $domNode->setAttribute('type', $jsonType);
 
         if ($jsonPtr != '/') {
             if ($this->flags_ & self::JSON_PTR_ATTRS) {
