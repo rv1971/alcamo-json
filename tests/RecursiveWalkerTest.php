@@ -108,7 +108,8 @@ class RecursiveWalkerTest extends TestCase
                     '/bar/baz/qux/6/1/1' => JsonNode::class,
                     '/bar/baz/qux/6/1/1/foo' => 'ut labore et dolore magna',
                     '/baz' => JsonNode::class,
-                    '/qux' => 'array'
+                    '/qux' => 'array',
+                    '/200' => true
                 ]
             ],
             [
@@ -277,7 +278,8 @@ class RecursiveWalkerTest extends TestCase
                 '/bar/baz',
                 '/bar/baz/qux',
                 '/baz',
-                '/qux'
+                '/qux',
+                '/200'
             ],
             $nodes
         );

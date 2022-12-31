@@ -36,11 +36,12 @@
                         {
                             "foo": "ut labore et dolore magna"
                         }
-                    ]                    
+                    ]
                 ]
             ]
         }
     },
     "baz": {},
-    "qux": []
+    "qux": [],
+    "200": true
 }
