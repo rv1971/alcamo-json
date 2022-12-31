@@ -23,22 +23,25 @@ class JsonNodeTest extends TestCase
             if ($node->getOwnerDocument() !== $doc) {
                 /** @throw alcamo::exception::DataValidationFailed if node
                  *  has a wrong owner document. */
-                throw new DataValidationFailed(
-                    $node,
-                    "{$doc->getBaseUri()}#$jsonPtr",
-                    null,
-                    "; \$ownerDocument_ differs from document owning this node"
+                throw (new DataValidationFailed())->setMessageContext(
+                    [
+                        'inData' => $node,
+                        'atUri' => "{$doc->getBaseUri()}#$jsonPtr",
+                        'extraMessage' => "\$ownerDocument_ differs from document owning this node"
+                    ]
                 );
             }
 
             if ($node->getJsonPtr() !== $jsonPtr) {
                 /** @throw alcamo::exception::DataValidationFailed if node
                  *  has a wrong JSOn pointer. */
-                throw new DataValidationFailed(
-                    $node,
-                    "{$doc->getBaseUri()}#$jsonPtr",
-                    null,
-                    "; \$jsonPtr_=\"{$node->getJsonPtr()}\" differs from actual position \"$jsonPtr\""
+                throw (new DataValidationFailed())->setMessageContext(
+                    [
+                        'inData' => $node,
+                        'atUri' => "{$doc->getBaseUri()}#$jsonPtr",
+                        'extraMessage' =>
+                        "\$jsonPtr_=\"{$node->getJsonPtr()}\" differs from actual position \"$jsonPtr\""
+                    ]
                 );
             }
         }
