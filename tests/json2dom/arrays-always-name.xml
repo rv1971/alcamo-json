@@ -1,25 +1,25 @@
 <?xml version="1.0"?>
-<s:document xmlns="tag:rv1971@web.de,2021:alcamo-json:j2d/object" xmlns:s="tag:rv1971@web.de,2021:alcamo-json:j2d/structure" xml:base="json2dom/arrays.json">
-  <foo name="foo">
+<s:document xmlns="tag:rv1971@web.de,2021:alcamo-json:j2d/object" xmlns:s="tag:rv1971@web.de,2021:alcamo-json:j2d/structure" type="object" xml:base="json2dom/arrays.json">
+  <foo name="foo" type="array">
     <s:item type="integer">3</s:item>
     <s:item type="integer">5</s:item>
     <s:item type="integer">7</s:item>
     <s:item type="integer">11</s:item>
   </foo>
-  <_-bar name="+bar">
-    <s:item>
+  <_-bar name="+bar" type="array">
+    <s:item type="object">
       <baz name="baz" type="boolean">true</baz>
-      <empty-array name="empty-array"/>
-      <empty-object name="empty-object"/>
+      <empty-array name="empty-array" type="array"/>
+      <empty-object name="empty-object" type="array"/>
     </s:item>
-    <s:item>
-      <s:item>
-        <qux name="qux">QUX</qux>
+    <s:item type="array">
+      <s:item type="object">
+        <qux name="qux" type="string">QUX</qux>
       </s:item>
-      <s:item>corge</s:item>
+      <s:item type="string">corge</s:item>
       <s:item type="boolean">false</s:item>
       <s:item type="null"/>
     </s:item>
-    <s:item/>
+    <s:item type="array"/>
   </_-bar>
 </s:document>
