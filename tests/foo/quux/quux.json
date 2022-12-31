@@ -2,5 +2,8 @@
     "foo": { "$ref": "#/bar" },
     "bar": { "$ref": "#/baz" },
     "baz": { "$ref": "#/qux" },
-    "qux": { "$ref": "../../bar.json#/bar/bar/3" }
+    "qux": { "$ref": "../../bar.json#/bar/bar/3" },
+    "200": "data with weird key",
+    "0200": "data with very weird key",
+    "00200": "data with extremely weird key"
 }

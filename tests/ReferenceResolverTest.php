@@ -276,6 +276,22 @@ class ReferenceResolverTest extends TestCase
             "$quxUri#/bar/1",
             $jsonDoc2->bar[1]->getUri()
         );
+
+        // check that key "0200" in quux.json is correctly preserved
+        $this->assertSame(
+            'data with weird key',
+            $jsonDoc2->corge->{'200'}
+        );
+
+        $this->assertSame(
+            'data with very weird key',
+            $jsonDoc2->corge->{'0200'}
+        );
+
+        $this->assertSame(
+            'data with extremely weird key',
+            $jsonDoc2->corge->{'00200'}
+        );
     }
 
     public function testResolveRecursion()

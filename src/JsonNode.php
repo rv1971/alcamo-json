@@ -65,7 +65,7 @@ class JsonNode
 
         if ($data instanceof self) {
             foreach ((array)$data as $key => $value) {
-                if ($key[0] != "\0") {
+                if (((string)$key)[0] != "\0") {
                     $this->$key = $value;
                 }
             }
