@@ -10,8 +10,11 @@ class JsonPtrTest extends TestCase
     /**
      * @dataProvider newFromStringProvider
      */
-    public function testNewFromString($string, $expectedSegments): void
-    {
+    public function testNewFromString(
+        $string,
+        $expectedSegments,
+        $expectedIsRoot
+    ): void {
         $jsonPtr = JsonPtr::newFromString($string);
 
         $this->assertSame(
@@ -24,13 +27,19 @@ class JsonPtrTest extends TestCase
         }
 
         $this->assertSame($string, (string)$jsonPtr);
+
+        $this->assertSame($expectedIsRoot, $jsonPtr->isRoot());
     }
 
     public function newFromStringProvider(): array
     {
         return [
-            [ '/', [] ],
-            [ '/foo~0~01bar/~1baz~1qux~0~1', [ 'foo~~1bar', '/baz/qux~/' ] ]
+            [ '/', [], true ],
+            [
+                '/foo~0~01bar/~1baz~1qux~0~1',
+                [ 'foo~~1bar', '/baz/qux~/' ],
+                false
+            ]
         ];
     }
 
@@ -50,9 +59,7 @@ class JsonPtrTest extends TestCase
      */
     public function testAppendSegment($string, $segment, $expectedString): void
     {
-        $jsonPtr = JsonPtr::newFromString($string);
-
-        $jsonPtr->appendSegment($segment);
+        $jsonPtr = JsonPtr::newFromString($string)->appendSegment($segment);
 
         $this->assertSame($expectedString, (string)$jsonPtr);
     }
@@ -62,6 +69,28 @@ class JsonPtrTest extends TestCase
         return [
             [ '/', 'foo', '/foo' ],
             [ '/~0~1foo', '~/bar/~', '/~0~1foo/~0~1bar~1~0' ]
+        ];
+    }
+
+    /**
+     * @dataProvider appendSegmentsProvider
+     */
+    public function testAppendSegments(
+        $string,
+        $segments,
+        $expectedString
+    ): void {
+        $jsonPtr = JsonPtr::newFromString($string)
+            ->appendSegments(JsonPtrSegments::newFromString($segments));
+
+        $this->assertSame($expectedString, (string)$jsonPtr);
+    }
+
+    public function appendSegmentsProvider(): array
+    {
+        return [
+            [ '/', 'foo/bar', '/foo/bar' ],
+            [ '/~0~1foo', 'baz/~0qux~1/quux', '/~0~1foo/baz/~0qux~1/quux' ]
         ];
     }
 }

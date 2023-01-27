@@ -5,13 +5,13 @@ namespace alcamo\json;
 use alcamo\exception\SyntaxError;
 
 /**
- * @brief JSON pointer
+ * @brief JSON pointer segments
  *
  * @invariant Immutable class.
  *
  * Implemented as an array of segments with a cached string representation.
  */
-class JsonPtr extends AbstractJsonPtrFragment
+class JsonPtrSegments extends AbstractJsonPtrFragment
 {
     private $string_;   ///< cached string representation
 
@@ -19,18 +19,18 @@ class JsonPtr extends AbstractJsonPtrFragment
     {
         $segments = [];
 
-        if ($string[0] !== '/') {
+        if (($string[0] ?? null) === '/') {
             throw (new SyntaxError())->setMessageContext(
                 [
                     'inData' => $string,
                     'atOffset' => 0,
-                    'extraMessage' => 'JSON pointer must begin with slash'
+                    'extraMessage' => 'JSON pointer segments must not begin with slash'
                 ]
             );
         }
 
-        if ($string != '/') {
-            foreach (explode('/', substr($string, 1)) as $segment) {
+        if ($string !== '') {
+            foreach (explode('/', $string) as $segment) {
                 $segments[] = strtr($segment, self::DECODE_MAP);
             }
         }
@@ -41,21 +41,15 @@ class JsonPtr extends AbstractJsonPtrFragment
     public function __toString(): string
     {
         if (!isset($this->string_)) {
-            if ($this->data_) {
-                foreach ($this->data_ as $segment) {
-                    $this->string_ .= '/' . strtr($segment, self::ENCODE_MAP);
-                }
-            } else {
-                $this->string_ = '/';
+            $segments = [];
+
+            foreach ($this->data_ as $segment) {
+                $segments[] = strtr($segment, self::ENCODE_MAP);
             }
+
+            $this->string_ = implode('/', $segments);
         }
 
         return $this->string_;
-    }
-
-    /// Whether this is the root pointer
-    public function isRoot(): bool
-    {
-        return !isset($this->data_[0]);
     }
 }

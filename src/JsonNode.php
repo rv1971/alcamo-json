@@ -24,15 +24,7 @@ class JsonNode
 
     private $baseUri_;         ///< ?UriInterface
     private $ownerDocument_;   ///< self
-    private $jsonPtr_;         ///< string
-
-    public static function composeJsonPtr(
-        string $jsonPtr,
-        string $prop
-    ): string {
-        return ($jsonPtr == '/' ? '/' : "$jsonPtr/")
-            . str_replace([ '~', '/' ], [ '~0', '~1' ], $prop);
-    }
+    private $jsonPtr_;         ///< JsonPtr
 
     /**
      * @brief Construct from object or iterable, creating a public property
@@ -55,13 +47,13 @@ class JsonNode
         object $data,
         ?UriInterface $baseUri = null,
         ?self $ownerDocument = null,
-        ?string $jsonPtr = null
+        ?JsonPtr $jsonPtr = null
     ) {
         $this->baseUri_ = $baseUri ?? $ownerDocument->baseUri_ ?? null;
 
         $this->ownerDocument_ = $ownerDocument ?? $this;
 
-        $this->jsonPtr_ = $jsonPtr ?? '/';
+        $this->jsonPtr_ = $jsonPtr ?? new JsonPtr([]);
 
         if ($data instanceof self) {
             foreach ((array)$data as $key => $value) {
@@ -72,8 +64,7 @@ class JsonNode
         } else {
             foreach ($data as $prop => $value) {
                 $this->$prop = $this->createNode(
-                    ($this->jsonPtr_ == '/' ? '/' : "$this->jsonPtr_/")
-                    . str_replace([ '~', '/' ], [ '~0', '~1' ], $prop),
+                    $this->jsonPtr_->appendSegment($prop),
                     $value
                 );
             }
@@ -104,7 +95,7 @@ class JsonNode
     }
 
     /// JSON pointer identifying the present node
-    public function getJsonPtr(): string
+    public function getJsonPtr(): JsonPtr
     {
         return $this->jsonPtr_;
     }
@@ -112,19 +103,15 @@ class JsonNode
     /**
      * @brief URI reference of this node
      *
-     * @param $jsonPtrFragment Extra string, which must not begin with a
-     * slash, to append to the JSON pointer. This is useful to generate URIs
-     * for child nodes, especially if the child nodes are not objects and
-     * therefore have no getUri() method.
+     * @param $segment Extra segment to append to the JSON pointer. This is
+     * useful to generate URIs for child nodes, especially if the child nodes
+     * are not objects and therefore have no getUri() method.
      */
-    public function getUri(?string $jsonPtrFragment = null): UriInterface
+    public function getUri(?string $segment = null): UriInterface
     {
-        $jsonPtr = $this->jsonPtr_;
-
-        if (isset($jsonPtrFragment)) {
-            $jsonPtr .=
-                $jsonPtr == '/' ? $jsonPtrFragment : "/$jsonPtrFragment";
-        }
+        $jsonPtr = isset($segment)
+            ? $this->jsonPtr_->appendSegment($segment)
+            : $this->jsonPtr_;
 
         return isset($this->ownerDocument_->baseUri_)
             ? $this->ownerDocument_->baseUri_->withFragment($jsonPtr)
@@ -156,10 +143,10 @@ class JsonNode
     {
         $node = clone $this;
 
-        /** If getJsonPtr() is `/`, the copy is its own owner
+        /** If getJsonPtr() is the root pointer, the copy is its own owner
          *  document. Otherwise it belongs to the same document as the
          *  original node. */
-        if ($node->jsonPtr_ == '/') {
+        if ($node->jsonPtr_->isRoot()) {
             $node->ownerDocument_ = $node;
         }
 
@@ -187,7 +174,7 @@ class JsonNode
      *
      * @sa [How to check if PHP array is associative or sequential?](https://stackoverflow.com/questions/173400/how-to-check-if-php-array-is-associative-or-sequential)
      */
-    public function createNode(string $jsonPtr, $value)
+    public function createNode(JsonPtr $jsonPtr, $value)
     {
         switch (true) {
             case is_array($value)
@@ -197,8 +184,10 @@ class JsonNode
                 $result = [];
 
                 foreach ($value as $prop => $subValue) {
-                    $result[] =
-                        $this->createNode("$jsonPtr/$prop", $subValue);
+                    $result[] = $this->createNode(
+                        $jsonPtr->appendSegment($prop),
+                        $subValue
+                    );
                 }
 
                 return $result;
@@ -239,7 +228,7 @@ class JsonNode
      */
     public function importObjectNode(
         JsonNode $node,
-        string $jsonPtr,
+        JsonPtr $jsonPtr,
         ?int $flags = null
     ): self {
         if ($flags & self::COPY_UPON_IMPORT) {
@@ -265,8 +254,10 @@ class JsonNode
 
         foreach ($walker as $jsonPtr => $subNode) {
             if ($flags & self::COPY_UPON_IMPORT) {
-                $class = $this->ownerDocument_
-                    ->getNodeClassToUse($jsonPtr, $subNode);
+                $class = $this->ownerDocument_->getNodeClassToUse(
+                    JsonPtr::newFromString($jsonPtr),
+                    $subNode
+                );
 
                 $subNode = new $class(
                     $subNode,
@@ -304,28 +295,34 @@ class JsonNode
      */
     public function importArrayNode(
         array $node,
-        string $jsonPtr,
+        JsonPtr $jsonPtr,
         ?int $flags = null
     ): array {
         $walker =
             new RecursiveWalker($node, RecursiveWalker::JSON_OBJECTS_ONLY);
 
-        foreach ($walker as $jsonPtrFragment => $subNode) {
+        foreach ($walker as $jsonPtrSegments => $subNode) {
             if ($flags & self::COPY_UPON_IMPORT) {
-                $class = $this->ownerDocument_
-                    ->getNodeClassToUse($jsonPtr, $subNode);
+                $class = $this->ownerDocument_->getNodeClassToUse(
+                    JsonPtr::newFromString($jsonPtr),
+                    $subNode
+                );
 
                 $subNode = new $class(
                     $subNode,
                     $subNode->baseUri_,
                     $this->ownerDocument_,
-                    "$jsonPtr/$jsonPtrFragment"
+                    $jsonPtr->appendFragment(
+                        JsonPtrSegments::newFromString($jsonPtrSegments)
+                    )
                 );
 
                 $walker->replaceCurrent($subNode);
             } else {
                 $subNode->ownerDocument_ = $this->ownerDocument_;
-                $subNode->jsonPtr_ = "$jsonPtr/$jsonPtrFragment";
+                $subNode->jsonPtr_ = $jsonPtr->appendFragment(
+                    JsonPtrSegments::newFromString($jsonPtrSegments)
+                );
             }
         }
 
