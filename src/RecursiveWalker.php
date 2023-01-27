@@ -19,7 +19,7 @@ class RecursiveWalker implements \Iterator
     private $currentParentPtr_;     ///< JSON pointer string
     private $skipChildren_ = false; ///< bool
 
-    private $currentKey_;  ///< JSON pointer string
+    private $currentKey_;  ///< AbstractJsonPtrFragment
     private $currentNode_; ///< mixed
 
     public function __construct(&$startNode, ?int $flags = null)
@@ -44,14 +44,14 @@ class RecursiveWalker implements \Iterator
     }
 
     /**
-     * @brief Return JSON pointer to current node
+     * @brief Return JSON pointer (segments) to current node
      *
-     * If the start node is not a JSON node, this is actually a fragment of a
-     * JSON pointer.
+     * If the start node is a JSON node, return a JSON pointer literal,
+     * otherwise a JSON pointer segments literal.
      */
     public function key(): string
     {
-        return $this->currentKey_;
+        return (string)$this->currentKey_;
     }
 
     public function next(): void
@@ -75,8 +75,8 @@ class RecursiveWalker implements \Iterator
         $this->currentGenerator_ = $this->iterateArray($parent);
 
         $this->currentKey_ = $this->startNode_ instanceof JsonNode
-            ? (string)$this->startNode_->getJsonPtr()
-            : '';
+            ? $this->startNode_->getJsonPtr()
+            : new JsonPtrSegments();
         $this->currentNode_ = $this->startNode_;
 
         if (
@@ -131,16 +131,23 @@ class RecursiveWalker implements \Iterator
 
         if ($this->startNode_ instanceof JsonNode) {
             if ($this->currentNode_ === $this->startNode_) {
+                $this->currentKey_ = $value instanceof JsonNnode
+                    ? new JsonPtr()
+                    : new JsonPtrSegments();
                 $this->startNode_ = $value;
                 $this->currentNode_ = $nodeValue;
                 return;
             }
-        } elseif ($this->currentKey_ == '') {
+        } elseif ($this->currentKey_->isEmpty()) {
             if ($this->startNode_ instanceof ReferenceContainer) {
                 $this->startNode_->value = $value;
             }
 
-            $this->startNode_ =  $value;
+            $this->currentKey_ = $value instanceof JsonNnode
+                ? new JsonPtr()
+                : new JsonPtrSegments();
+
+            $this->startNode_ =  $nodeValue;
             $this->currentNode_ = $nodeValue;
             return;
         }
@@ -213,11 +220,8 @@ class RecursiveWalker implements \Iterator
             }
         }
 
-        $this->currentKey_ =
-            ($this->currentParentPtr_ == '/' || $this->currentParentPtr_ == ''
-             ? $this->currentParentPtr_
-             : "$this->currentParentPtr_/")
-            . strtr($this->currentGenerator_->key(), JsonPtr::ENCODE_MAP);
+        $this->currentKey_ = $this->currentParentPtr_
+            ->appendSegment($this->currentGenerator_->key());
 
         $this->currentNode_ = $this->currentGenerator_->current();
     }

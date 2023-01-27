@@ -52,4 +52,10 @@ class JsonPtrSegments extends AbstractJsonPtrFragment
 
         return $this->string_;
     }
+
+    /// Whether this is an empty sequence of segments
+    public function isEmpty(): bool
+    {
+        return !isset($this->data_[0]);
+    }
 }

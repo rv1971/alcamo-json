@@ -16,8 +16,10 @@ use alcamo\collection\{
  *
  * Implemented as an array of segments.
  */
-abstract class AbstractJsonPtrFragment
-    implements \Countable, \Iterator, \ArrayAccess
+abstract class AbstractJsonPtrFragment implements
+    \Countable,
+    \Iterator,
+    \ArrayAccess
 {
     use CountableTrait;
     use ArrayIteratorTrait;
@@ -32,9 +34,9 @@ abstract class AbstractJsonPtrFragment
     /**
      * @param Numerically-indexed array of not yet encoded segments
      */
-    public function __construct(array $segments)
+    public function __construct(?array $segments = null)
     {
-        $this->data_ = $segments;
+        $this->data_ = $segments ?? [];
     }
 
     public function appendSegment(string $segment): self

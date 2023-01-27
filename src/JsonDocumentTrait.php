@@ -48,7 +48,7 @@ trait JsonDocumentTrait
     public function getNode(JsonPtr $jsonPtr)
     {
         $current = $this;
-        $currentJsonPtr = new JsonPtr([]);
+        $currentJsonPtr = new JsonPtr();
 
         foreach ($jsonPtr as $segment) {
             $currentJsonPtr = $currentJsonPtr->appendSegment($segment);
@@ -106,7 +106,7 @@ trait JsonDocumentTrait
         }
 
         $current = new ReferenceContainer($this);
-        $currentJsonPtr = new JsonPtr([]);
+        $currentJsonPtr = new JsonPtr();
 
         foreach ($jsonPtr as $segment) {
             $currentJsonPtr = $currentJsonPtr->appendSegment($segment);

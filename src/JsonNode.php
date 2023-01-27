@@ -53,7 +53,7 @@ class JsonNode
 
         $this->ownerDocument_ = $ownerDocument ?? $this;
 
-        $this->jsonPtr_ = $jsonPtr ?? new JsonPtr([]);
+        $this->jsonPtr_ = $jsonPtr ?? new JsonPtr();
 
         if ($data instanceof self) {
             foreach ((array)$data as $key => $value) {

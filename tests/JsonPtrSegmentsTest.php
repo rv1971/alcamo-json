@@ -10,7 +10,11 @@ class JsonPtrSegmentsTest extends TestCase
     /**
      * @dataProvider newFromStringProvider
      */
-    public function testNewFromString($string, $expectedSegments): void {
+    public function testNewFromString(
+        $string,
+        $expectedSegments,
+        $expectedIsEmpty
+    ): void {
         $jsonPtrSegments = JsonPtrSegments::newFromString($string);
 
         $this->assertSame(
@@ -23,13 +27,15 @@ class JsonPtrSegmentsTest extends TestCase
         }
 
         $this->assertSame($string, (string)$jsonPtrSegments);
+
+        $this->assertSame($expectedIsEmpty, $jsonPtrSegments->isEmpty());
     }
 
     public function newFromStringProvider(): array
     {
         return [
-            [ '', [] ],
-            [ 'foo~0~01bar/~1baz~1qux~0~1', [ 'foo~~1bar', '/baz/qux~/' ] ]
+            [ '', [], true ],
+            [ 'foo~0~01bar/~1baz~1qux~0~1', [ 'foo~~1bar', '/baz/qux~/' ], false ]
         ];
     }
 
