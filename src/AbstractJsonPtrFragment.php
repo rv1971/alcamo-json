@@ -39,6 +39,11 @@ abstract class AbstractJsonPtrFragment implements
         $this->data_ = $segments ?? [];
     }
 
+    public function toArray(): array
+    {
+        return $this->data_;
+    }
+
     public function appendSegment(string $segment): self
     {
         $segments = $this->data_;

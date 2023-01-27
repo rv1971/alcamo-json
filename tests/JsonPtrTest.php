@@ -22,6 +22,8 @@ class JsonPtrTest extends TestCase
             count($jsonPtr)
         );
 
+        $this->assertSame($expectedSegments, $jsonPtr->toArray());
+
         foreach ($jsonPtr as $i => $segment) {
             $this->assertSame($segment, $expectedSegments[$i]);
         }
