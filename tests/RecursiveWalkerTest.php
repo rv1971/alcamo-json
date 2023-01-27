@@ -15,8 +15,10 @@ class RecursiveWalkerTest extends TestCase
     {
         $nodes = [];
 
-        foreach (new RecursiveWalker($startNode, $flags) as $ptr => $value) {
-            $nodes[$ptr] = is_object($value)
+        foreach (new RecursiveWalker($startNode, $flags) as $key => $pair) {
+            [ $ptr, $value ] = $pair;
+
+            $nodes[$key] = is_object($value)
                 ? get_class($value)
                 : (is_array($value) ? 'array' : $value);
 
@@ -254,7 +256,7 @@ class RecursiveWalkerTest extends TestCase
 
         $walker = new RecursiveWalker($jsonDoc);
 
-        foreach ($walker as $ptr => $value) {
+        foreach ($walker as $ptr => $pair) {
             switch ($ptr) {
                 case '/foo/~0~0':
                 case '/bar/baz/qux':
@@ -364,7 +366,7 @@ class RecursiveWalkerTest extends TestCase
         $walker->next();
         $walker->next();
 
-        $this->assertSame(43, $walker->current());
+        $this->assertSame(43, $walker->current()[1]);
 
         // replace start node by array
         $jsonDoc2 = $jsonDoc->createDeepCopy();
@@ -376,12 +378,12 @@ class RecursiveWalkerTest extends TestCase
         $walker->next();
         $walker->next();
 
-        $this->assertSame(43, $walker->current());
+        $this->assertSame(43, $walker->current()[1]);
 
         // replace again the same node
         $walker->replaceCurrent($jsonDoc2->bar->baz->qux[6][0][2]->QUUX);
 
-        $this->assertSame(true, $walker->current()->CORGE);
+        $this->assertSame(true, $walker->current()[1]->CORGE);
     }
 
     // replaceCurrent() when start node is an array

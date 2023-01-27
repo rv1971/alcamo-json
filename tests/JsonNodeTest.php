@@ -18,8 +18,10 @@ class JsonNodeTest extends TestCase
             new RecursiveWalker(
                 $doc,
                 RecursiveWalker::JSON_OBJECTS_ONLY
-            ) as $jsonPtr => $node
+            ) as $pair
         ) {
+            [ $jsonPtr, $node] = $pair;
+
             if ($node->getOwnerDocument() !== $doc) {
                 /** @throw alcamo::exception::DataValidationFailed if node
                  *  has a wrong owner document. */
@@ -32,7 +34,7 @@ class JsonNodeTest extends TestCase
                 );
             }
 
-            if ((string)$node->getJsonPtr() !== $jsonPtr) {
+            if ($node->getJsonPtr() != $jsonPtr) {
                 /** @throw alcamo::exception::DataValidationFailed if node
                  *  has a wrong JSON pointer. */
                 throw (new DataValidationFailed())->setMessageContext(

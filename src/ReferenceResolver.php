@@ -125,7 +125,9 @@ class ReferenceResolver
         $walker =
             new RecursiveWalker($node, RecursiveWalker::JSON_OBJECTS_ONLY);
 
-        foreach ($walker as $jsonPtr => $subNode) {
+        foreach ($walker as $jsonPtrString => $pair) {
+            [ $jsonPtr, $subNode ] = $pair;
+
             if (!isset($subNode->{'$ref'})) {
                 continue;
             }
@@ -170,7 +172,7 @@ class ReferenceResolver
                     continue 2;
             }
 
-            if ($history->contains([ $jsonPtr, $ref ])) {
+            if ($history->contains([ $jsonPtrString, $ref ])) {
                 throw (new Recursion())->setMessageContext(
                     [
                         'atUri' =>
@@ -191,7 +193,7 @@ class ReferenceResolver
 
             if ($newNode instanceof JsonNode) {
                 $nextHistory = clone $history;
-                $nextHistory->add([ $jsonPtr, $ref ]);
+                $nextHistory->add([ $jsonPtrString, $ref ]);
 
                 if ($action == self::CONTINUE_RECURSION) {
                     $newNode = $this->resolveRecursively(
@@ -202,7 +204,7 @@ class ReferenceResolver
                 }
             } elseif (is_array($newNode)) {
                 $nextHistory = clone $history;
-                $nextHistory->add([ $jsonPtr, $ref ]);
+                $nextHistory->add([ $jsonPtrString, $ref ]);
 
                 if ($action == self::CONTINUE_RECURSION) {
                     $newNode = $this->resolveInArray(
@@ -218,13 +220,13 @@ class ReferenceResolver
             if ($newNode instanceof JsonNode) {
                 $newNode = $node->importObjectNode(
                     $newNode,
-                    JsonPtr::newFromString($jsonPtr),
+                    $jsonPtr,
                     JsonNode::COPY_UPON_IMPORT
                 );
             } elseif (is_array($newNode)) {
                 $newNode = $node->importArrayNode(
                     $newNode,
-                    JsonPtr::newFromString($jsonPtr),
+                    $jsonPtr,
                     JsonNode::COPY_UPON_IMPORT
                 );
             }
@@ -241,9 +243,9 @@ class ReferenceResolver
         $walker =
             new RecursiveWalker($node, RecursiveWalker::JSON_OBJECTS_ONLY);
 
-        foreach ($walker as $subNode) {
+        foreach ($walker as $pair) {
             $walker->replaceCurrent(
-                $this->resolveRecursively($subNode, $flags, $history)
+                $this->resolveRecursively($pair[1], $flags, $history)
             );
 
             $walker->skipChildren();

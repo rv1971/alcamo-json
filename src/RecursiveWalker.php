@@ -35,12 +35,15 @@ class RecursiveWalker implements \Iterator
         $this->rewind();
     }
 
-    /// Current node in the JSON tree, may be of any type
+    /// Pair consisting of AbstractJsonPtrFragment and node
     public function current()
     {
-        return $this->currentNode_ instanceof ReferenceContainer
+        return [
+            $this->currentKey_,
+            $this->currentNode_ instanceof ReferenceContainer
             ? $this->currentNode_->value
-            : $this->currentNode_;
+            : $this->currentNode_
+        ];
     }
 
     /**

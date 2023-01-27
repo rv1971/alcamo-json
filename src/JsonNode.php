@@ -156,8 +156,8 @@ class JsonNode
             | RecursiveWalker::OMIT_START_NODE
         );
 
-        foreach ($walker as $subNode) {
-            $subNode = clone $subNode;
+        foreach ($walker as $pair) {
+            $subNode = clone $pair[1];
             $subNode->ownerDocument_ = $node->ownerDocument_;
             $walker->replaceCurrent($subNode);
         }
@@ -252,24 +252,24 @@ class JsonNode
             | RecursiveWalker::OMIT_START_NODE
         );
 
-        foreach ($walker as $jsonPtr => $subNode) {
+        foreach ($walker as $pair) {
+            [ $jsonPtr, $subNode ] = $pair;
+
             if ($flags & self::COPY_UPON_IMPORT) {
-                $class = $this->ownerDocument_->getNodeClassToUse(
-                    JsonPtr::newFromString($jsonPtr),
-                    $subNode
-                );
+                $class = $this->ownerDocument_
+                    ->getNodeClassToUse($jsonPtr, $subNode);
 
                 $subNode = new $class(
                     $subNode,
                     $subNode->baseUri_,
                     $this->ownerDocument_,
-                    JsonPtr::newFromString($jsonPtr)
+                    $jsonPtr
                 );
 
                 $walker->replaceCurrent($subNode);
             } else {
                 $subNode->ownerDocument_ = $this->ownerDocument_;
-                $subNode->jsonPtr_ = JsonPtr::newFromString($jsonPtr);
+                $subNode->jsonPtr_ = $jsonPtr;
             }
         }
 
@@ -301,28 +301,24 @@ class JsonNode
         $walker =
             new RecursiveWalker($node, RecursiveWalker::JSON_OBJECTS_ONLY);
 
-        foreach ($walker as $jsonPtrSegments => $subNode) {
+        foreach ($walker as $pair) {
+            [ $jsonPtrSegments, $subNode ] = $pair;
+
             if ($flags & self::COPY_UPON_IMPORT) {
-                $class = $this->ownerDocument_->getNodeClassToUse(
-                    JsonPtr::newFromString($jsonPtr),
-                    $subNode
-                );
+                $class = $this->ownerDocument_
+                    ->getNodeClassToUse($jsonPtr, $subNode);
 
                 $subNode = new $class(
                     $subNode,
                     $subNode->baseUri_,
                     $this->ownerDocument_,
-                    $jsonPtr->appendSegments(
-                        JsonPtrSegments::newFromString($jsonPtrSegments)
-                    )
+                    $jsonPtr->appendSegments($jsonPtrSegments)
                 );
 
                 $walker->replaceCurrent($subNode);
             } else {
                 $subNode->ownerDocument_ = $this->ownerDocument_;
-                $subNode->jsonPtr_ = $jsonPtr->appendSegments(
-                    JsonPtrSegments::newFromString($jsonPtrSegments)
-                );
+                $subNode->jsonPtr_ = $jsonPtr->appendSegments($jsonPtrSegments);
             }
         }
 
