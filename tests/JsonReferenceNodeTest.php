@@ -21,7 +21,7 @@ class JsonReferenceNodeTest extends TestCase
             'http:://www.example.com/foo.json',
             null,
             $jsonDoc,
-            '/quux'
+            JsonPtr::newFromString('/quux')
         );
 
         $this->assertSame(
@@ -31,6 +31,6 @@ class JsonReferenceNodeTest extends TestCase
 
         $this->assertSame($jsonDoc, $refNode->getOwnerDocument());
 
-        $this->assertSame('/quux', $refNode->getJsonPtr());
+        $this->assertSame('/quux', (string)$refNode->getJsonPtr());
     }
 }

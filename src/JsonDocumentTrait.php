@@ -45,41 +45,21 @@ trait JsonDocumentTrait
     }
 
     /// Get JSON node identified by JSON pointer
-    public function getNode(string $jsonPtr)
+    public function getNode(JsonPtr $jsonPtr)
     {
-        if ($jsonPtr[0] != '/') {
-            /** @throw alcamo::exception::SyntaxError if $jsonPtr does not
-             *  start with a slash. */
-            throw (new SyntaxError())->setMessageContext(
-                [
-                    'inData' => $jsonPtr,
-                    'atOffset' => 0,
-                    'extraMessage' => 'not a valid JSON pointer',
-                    'atUri' => $this->getUri()
-                ]
-            );
-        }
-
         $current = $this;
-        $currentJsonPtr = '';
+        $currentJsonPtr = new JsonPtr([]);
 
-        for (
-            $refToken = strtok($jsonPtr, '/');
-            $refToken !== false;
-            $refToken = strtok('/')
-        ) {
-            $currentJsonPtr .= "/$refToken";
+        foreach ($jsonPtr as $segment) {
+            $currentJsonPtr = $currentJsonPtr->appendSegment($segment);
 
             /** @throw alcamo::json::exception::NodeNotFound if there is no
              *  node for the given pointer. */
 
             if (is_object($current)) {
-                $refToken =
-                    str_replace([ '~1', '~0' ], [ '/', '~' ], $refToken);
-
                 if (
-                    !isset($current->$refToken)
-                    && !property_exists($current, $refToken)
+                    !isset($current->$segment)
+                    && !property_exists($current, $segment)
                 ) {
                     throw (new NodeNotFound())->setMessageContext(
                         [
@@ -90,11 +70,11 @@ trait JsonDocumentTrait
                     );
                 }
 
-                $current = $current->$refToken;
+                $current = $current->$segment;
             } else {
                 if (
-                    !isset($current[$refToken])
-                    && !array_key_exists($refToken, $current)
+                    !isset($current[$segment])
+                    && !array_key_exists($segment, $current)
                 ) {
                     throw (new NodeNotFound())->setMessageContext(
                         [
@@ -105,29 +85,16 @@ trait JsonDocumentTrait
                     );
                 }
 
-                $current = $current[$refToken];
+                $current = $current[$segment];
             }
         }
 
         return $current;
     }
 
-    public function setNode(string $jsonPtr, $newNode): void
+    public function setNode(JsonPtr $jsonPtr, $newNode): void
     {
-        if ($jsonPtr[0] != '/') {
-            /** @throw alcamo::exception::SyntaxError if $jsonPtr does not
-             *  start with a slash. */
-            throw (new SyntaxError())->setMessageContext(
-                [
-                    'inData' => $jsonPtr,
-                    'atOffset' => 0,
-                    'extraMessage' >= 'not a valid JSON pointer',
-                    'atUri' => $this->getUri()
-                ]
-            );
-        }
-
-        if ($jsonPtr == '/') {
+        if ($jsonPtr->isRoot()) {
             /** @throw alcamo::exception::Unsupported when attempting to
              *  replace the root node. */
             throw (new Unsupported())->setMessageContext(
@@ -139,25 +106,18 @@ trait JsonDocumentTrait
         }
 
         $current = new ReferenceContainer($this);
-        $currentJsonPtr = '';
+        $currentJsonPtr = new JsonPtr([]);
 
-        for (
-            $refToken = strtok($jsonPtr, '/');
-            $refToken !== false;
-            $refToken = strtok('/')
-        ) {
-            $currentJsonPtr .= "/$refToken";
+        foreach ($jsonPtr as $segment) {
+            $currentJsonPtr = $currentJsonPtr->appendSegment($segment);
 
             /** @throw alcamo::json::exception::NodeNotFound if there is no
              *  node for the given pointer. */
 
             if ($current->value instanceof JsonNode) {
-                $refToken =
-                    str_replace([ '~1', '~0' ], [ '/', '~' ], $refToken);
-
                 if (
-                    !isset($current->value->$refToken)
-                    && !property_exists($current, $refToken)
+                    !isset($current->value->$segment)
+                    && !property_exists($current, $segment)
                 ) {
                     throw (new NodeNotFound())->setMessageContext(
                         [
@@ -168,11 +128,11 @@ trait JsonDocumentTrait
                     );
                 }
 
-                $current = new ReferenceContainer($current->value->$refToken);
+                $current = new ReferenceContainer($current->value->$segment);
             } else {
                 if (
-                    !isset($current->value[$refToken])
-                    && !array_key_exists($refToken, $current)
+                    !isset($current->value[$segment])
+                    && !array_key_exists($segment, $current)
                 ) {
                     throw (new NodeNotFound())->setMessageContext(
                         [
@@ -183,7 +143,7 @@ trait JsonDocumentTrait
                     );
                 }
 
-                $current = new ReferenceContainer($current->value[$refToken]);
+                $current = new ReferenceContainer($current->value[$segment]);
             }
         }
 
@@ -191,7 +151,7 @@ trait JsonDocumentTrait
     }
 
     /// Get class that should be used to create a node
-    public function getNodeClassToUse(string $jsonPtr, object $value): string
+    public function getNodeClassToUse(JsonPtr $jsonPtr, object $value): string
     {
         return JsonNode::class;
     }

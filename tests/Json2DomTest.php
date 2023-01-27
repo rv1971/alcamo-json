@@ -157,11 +157,4 @@ class Json2DomTest extends TestCase
             $domDocument2->saveXML()
         );
     }
-
-    public function testJsonPtr2XmlIdException(): void
-    {
-        $this->expectException(SyntaxError::class);
-
-        (new Json2Dom())->jsonPtr2XmlId('foo');
-    }
 }

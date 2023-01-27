@@ -75,7 +75,7 @@ class RecursiveWalker implements \Iterator
         $this->currentGenerator_ = $this->iterateArray($parent);
 
         $this->currentKey_ = $this->startNode_ instanceof JsonNode
-            ? $this->startNode_->getJsonPtr()
+            ? (string)$this->startNode_->getJsonPtr()
             : '';
         $this->currentNode_ = $this->startNode_;
 
@@ -217,11 +217,7 @@ class RecursiveWalker implements \Iterator
             ($this->currentParentPtr_ == '/' || $this->currentParentPtr_ == ''
              ? $this->currentParentPtr_
              : "$this->currentParentPtr_/")
-            . str_replace(
-                [ '~', '/' ],
-                [ '~0', '~1' ],
-                $this->currentGenerator_->key()
-            );
+            . strtr($this->currentGenerator_->key(), JsonPtr::ENCODE_MAP);
 
         $this->currentNode_ = $this->currentGenerator_->current();
     }

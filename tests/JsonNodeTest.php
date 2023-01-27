@@ -32,9 +32,9 @@ class JsonNodeTest extends TestCase
                 );
             }
 
-            if ($node->getJsonPtr() !== $jsonPtr) {
+            if ((string)$node->getJsonPtr() !== $jsonPtr) {
                 /** @throw alcamo::exception::DataValidationFailed if node
-                 *  has a wrong JSOn pointer. */
+                 *  has a wrong JSON pointer. */
                 throw (new DataValidationFailed())->setMessageContext(
                     [
                         'inData' => $node,
@@ -57,7 +57,7 @@ class JsonNodeTest extends TestCase
 
         $this->assertSame($expectedBaseUri, (string)$node->getBaseUri());
 
-        $this->assertSame($expectedJsonPtr, $node->getJsonPtr());
+        $this->assertSame($expectedJsonPtr, (string)$node->getJsonPtr());
 
         $this->assertEquals(
             "$expectedBaseUri#$expectedJsonPtr",
@@ -110,8 +110,8 @@ class JsonNodeTest extends TestCase
         $this->assertEquals('#/', $jsonDoc->getUri());
 
         $this->assertEquals(
-            '#/bar/baz/qux/0',
-            $jsonDoc->bar->baz->getUri('qux/0')
+            '#/bar/baz/qux',
+            $jsonDoc->bar->baz->getUri('qux')
         );
     }
 
@@ -172,13 +172,15 @@ class JsonNodeTest extends TestCase
             . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
         );
 
-        $jsonDoc->bar->foo =
-            $jsonDoc->importObjectNode($jsonDoc2->foo, '/bar/foo');
+        $jsonDoc->bar->foo = $jsonDoc->importObjectNode(
+            $jsonDoc2->foo,
+            JsonPtr::newFromString('/bar/foo')
+        );
 
         $jsonDoc->bar->baz->qux[2] =
             $jsonDoc->importObjectNode(
                 $jsonDoc2->foo->{'~~'},
-                '/bar/baz/qux/2',
+                JsonPtr::newFromString('/bar/baz/qux/2'),
                 JsonNode::COPY_UPON_IMPORT
             );
 
@@ -210,12 +212,12 @@ class JsonNodeTest extends TestCase
 
         $jsonDoc->foo = $jsonDoc->importArrayNode(
             $jsonDoc2->bar->baz->qux[6],
-            '/foo'
+            JsonPtr::newFromString('/foo')
         );
 
         $jsonDoc->foo[0][1] = $jsonDoc->importArrayNode(
             $jsonDoc2->bar->baz->qux[6][1],
-            '/foo/0/1',
+            JsonPtr::newFromString('/foo/0/1'),
             JsonNode::COPY_UPON_IMPORT
         );
 

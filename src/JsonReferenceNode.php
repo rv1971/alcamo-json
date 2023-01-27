@@ -13,7 +13,7 @@ class JsonReferenceNode extends JsonNode
         string $uri,
         ?UriInterface $baseUri = null,
         JsonNode $ownerDocument,
-        string $jsonPtr
+        JsonPtr $jsonPtr
     ): self {
         return new self(
             (object)[ '$ref' => $uri ],

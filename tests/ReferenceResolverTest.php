@@ -101,7 +101,7 @@ class ReferenceResolverTest extends TestCase
                 );
             }
 
-            if ($node->getJsonPtr() !== $jsonPtr) {
+            if ((string)$node->getJsonPtr() !== $jsonPtr) {
                 /** @throw alcamo::exception::DataValidationFailed if node
                  *  has a wrong JSON pointer. */
                 throw (new DataValidationFailed())->setMessageContext(
@@ -327,17 +327,17 @@ class ReferenceResolverTest extends TestCase
 
         $this->assertSame(
             '#/defs/foo',
-            $jsonDoc->getNode('/bar/foo/$ref')
+            $jsonDoc->getNode(JsonPtr::newFromString('/bar/foo/$ref'))
         );
 
         $this->assertSame(
             'http://www.example.org#bar',
-            $jsonDoc->getNode('/bar/bar/0/$ref')
+            $jsonDoc->getNode(JsonPtr::newFromString('/bar/bar/0/$ref'))
         );
 
         $this->assertSame(
             'Resolved from #/defs/baz',
-            $jsonDoc->getNode('/bar/bar/1/comment')
+            $jsonDoc->getNode(JsonPtr::newFromString('/bar/bar/1/comment'))
         );
     }
 

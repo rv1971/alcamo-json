@@ -36,7 +36,7 @@ trait TypedNodeDocumentTrait
     use JsonDocumentTrait;
 
     /// Class to use for $value at the position $jsonPtr
-    public function getNodeClassToUse(string $jsonPtr, object $value): string
+    public function getNodeClassToUse(JsonPtr $jsonPtr, object $value): string
     {
         /** Return JsonReference for any reference nodes. A node is considered
          *  a refernce node iff is has a `$ref` property with a string
@@ -47,13 +47,7 @@ trait TypedNodeDocumentTrait
 
         $class = static::class;
 
-        for (
-            $refToken = strtok($jsonPtr, '/');
-            $refToken !== false;
-            $refToken = strtok('/')
-        ) {
-            $refToken = str_replace([ '~0', '~1' ], [ '~', '/' ], $refToken);
-
+        foreach ($jsonPtr as $segment) {
             if (!isset($map)) {
                 try {
                     $map = $class::CLASS_MAP;
@@ -70,7 +64,7 @@ trait TypedNodeDocumentTrait
             }
 
             try {
-                $childSpec = $map[$refToken] ?? $map['*'];
+                $childSpec = $map[$segment] ?? $map['*'];
             } catch (\Throwable $e) {
                 $uri = $this->getBaseUri() . "#$jsonPtr";
 
@@ -78,7 +72,7 @@ trait TypedNodeDocumentTrait
                  *  is found in the class map. */
                 throw (new InvalidEnumerator())->setMessageContext(
                     [
-                        'value' => $refToken,
+                        'value' => $segment,
                         'expectedOneOf' => array_keys($map),
                         'atUri' => $uri
                     ]

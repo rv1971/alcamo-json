@@ -114,7 +114,7 @@ class JsonNode
             : $this->jsonPtr_;
 
         return isset($this->ownerDocument_->baseUri_)
-            ? $this->ownerDocument_->baseUri_->withFragment($jsonPtr)
+            ? $this->ownerDocument_->baseUri_->withFragment((string)$jsonPtr)
             : new Uri("#$jsonPtr");
     }
 
@@ -263,13 +263,13 @@ class JsonNode
                     $subNode,
                     $subNode->baseUri_,
                     $this->ownerDocument_,
-                    $jsonPtr
+                    JsonPtr::newFromString($jsonPtr)
                 );
 
                 $walker->replaceCurrent($subNode);
             } else {
                 $subNode->ownerDocument_ = $this->ownerDocument_;
-                $subNode->jsonPtr_ = $jsonPtr;
+                $subNode->jsonPtr_ = JsonPtr::newFromString($jsonPtr);
             }
         }
 
@@ -312,7 +312,7 @@ class JsonNode
                     $subNode,
                     $subNode->baseUri_,
                     $this->ownerDocument_,
-                    $jsonPtr->appendFragment(
+                    $jsonPtr->appendSegments(
                         JsonPtrSegments::newFromString($jsonPtrSegments)
                     )
                 );
@@ -320,7 +320,7 @@ class JsonNode
                 $walker->replaceCurrent($subNode);
             } else {
                 $subNode->ownerDocument_ = $this->ownerDocument_;
-                $subNode->jsonPtr_ = $jsonPtr->appendFragment(
+                $subNode->jsonPtr_ = $jsonPtr->appendSegments(
                     JsonPtrSegments::newFromString($jsonPtrSegments)
                 );
             }

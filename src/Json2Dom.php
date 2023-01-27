@@ -134,10 +134,7 @@ class Json2Dom
                         $value,
                         static::OBJECT_NS,
                         $localName,
-                        JsonNode::composeJsonPtr(
-                            $jsonNode->getJsonPtr(),
-                            $prop
-                        ),
+                        $jsonNode->getJsonPtr()->appendSegment($prop),
                         $origName
                     );
                     break;
@@ -148,10 +145,7 @@ class Json2Dom
                         $value,
                         static::OBJECT_NS,
                         $localName,
-                        JsonNode::composeJsonPtr(
-                            $jsonNode->getJsonPtr(),
-                            $prop
-                        ),
+                        $jsonNode->getJsonPtr()->appendSegment($prop),
                         $origName
                     );
             }
@@ -163,7 +157,7 @@ class Json2Dom
         array $jsonArray,
         string $nsName,
         string $qName,
-        string $jsonPtr,
+        JsonPtr $jsonPtr,
         ?string $origName = null
     ): void {
         $child = $domNode->ownerDocument->createElementNS($nsName, $qName);
@@ -189,7 +183,7 @@ class Json2Dom
                         $item,
                         static::STRUCTURE_NS,
                         's:item',
-                        "$jsonPtr/$pos"
+                        $jsonPtr->appendSegment($pos)
                     );
                     break;
 
@@ -199,7 +193,7 @@ class Json2Dom
                         $item,
                         static::STRUCTURE_NS,
                         's:item',
-                        "$jsonPtr/$pos"
+                        $jsonPtr->appendSegment($pos)
                     );
             }
         }
@@ -210,7 +204,7 @@ class Json2Dom
         $value,
         string $nsName,
         string $localName,
-        string $jsonPtr,
+        JsonPtr $jsonPtr,
         ?string $origName = null
     ): void {
         $child = $domNode->ownerDocument->createElementNS(
@@ -256,21 +250,8 @@ class Json2Dom
     }
 
     /// Convert a JSON pointer to a xml:id attribute
-    public function jsonPtr2XmlId(string $jsonPtr): string
+    public function jsonPtr2XmlId(JsonPtr $jsonPtr): string
     {
-        /** @throw alcamo:exception:SyntaxError if $jsonPtr does not start
-         *  with a slash. */
-        if ($jsonPtr[0] != '/') {
-            throw (new SyntaxError())->setMessageContext(
-                [
-                    'inData' => $jsonPtr,
-                    'atOffset' => 0,
-                    'expectedOneOf' => '/',
-                    'extraMessage' => 'invalid JSON pointer'
-                ]
-            );
-        }
-
         /** Apply jsonProp2localName() to whatever follows the initial
          *  slash. */
         return $this->jsonProp2localName(substr($jsonPtr, 1));
@@ -294,7 +275,7 @@ class Json2Dom
     protected function addAttributes(
         \DOMNode $domNode,
         $value,
-        ?string $jsonPtr,
+        ?JsonPtr $jsonPtr,
         ?string $origName = null
     ): void {
         if (isset($origName)) {
@@ -310,7 +291,7 @@ class Json2Dom
 
         $domNode->setAttribute('type', $jsonType);
 
-        if ($jsonPtr != '/') {
+        if (!$jsonPtr->isRoot()) {
             if ($this->flags_ & self::JSON_PTR_ATTRS) {
                 $domNode->setAttribute('jsonPtr', $jsonPtr);
             }

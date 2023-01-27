@@ -75,7 +75,7 @@ class JsonDocumentFactory
             return static::createFromJsonText(
                 file_get_contents($urlWithoutFragment),
                 $urlWithoutFragment
-            )->getNode($fragment);
+            )->getNode(JsonPtr::newFromString($fragment));
         }
     }
 }

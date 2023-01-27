@@ -41,7 +41,7 @@ class ReferenceResolver
         $result =
             $this->resolveRecursively($startNode, $this->flags_, new Set());
 
-        if ($result !== $startNode && $startNode->getJsonPtr() != '/') {
+        if ($result !== $startNode && !$startNode->getJsonPtr()->isRoot()) {
             $startNode->getOwnerDocument()
                 ->setNode($startNode->getJsonPtr(), $result);
         }
@@ -73,8 +73,8 @@ class ReferenceResolver
      */
     protected function resolveInternalRef(JsonNode $node, ?int &$action)
     {
-        $newNode =
-            $node->getOwnerDocument()->getNode(substr($node->{'$ref'}, 1));
+        $newNode = $node->getOwnerDocument()
+            ->getNode(JsonPtr::newFromString(substr($node->{'$ref'}, 1)));
 
         if ($newNode instanceof JsonNode) {
             $newNode = $newNode->createDeepCopy();
@@ -218,13 +218,13 @@ class ReferenceResolver
             if ($newNode instanceof JsonNode) {
                 $newNode = $node->importObjectNode(
                     $newNode,
-                    $jsonPtr,
+                    JsonPtr::newFromString($jsonPtr),
                     JsonNode::COPY_UPON_IMPORT
                 );
             } elseif (is_array($newNode)) {
                 $newNode = $node->importArrayNode(
                     $newNode,
-                    $jsonPtr,
+                    JsonPtr::newFromString($jsonPtr),
                     JsonNode::COPY_UPON_IMPORT
                 );
             }

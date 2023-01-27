@@ -45,7 +45,10 @@ class JsonDocumentTest extends TestCase
      */
     public function testGetNode($jsonDoc, $jsonPtr, $expectedData)
     {
-        $this->assertSame($expectedData, $jsonDoc->getNode($jsonPtr));
+        $this->assertSame(
+            $expectedData,
+            $jsonDoc->getNode(JsonPtr::newFromString($jsonPtr))
+        );
     }
 
     public function getNodeProvider()
@@ -62,7 +65,7 @@ class JsonDocumentTest extends TestCase
             [ $jsonDoc, '/foo/~0~0/~1~0', [ 3, 5, 7, 11, 13, 17 ] ],
             [ $jsonDoc, '/foo/~0~0/~1~0/0', 3 ],
             [ $jsonDoc, '/foo/~0~0/~1~0/1', 5 ],
-            [ $jsonDoc, '/foo/~0~0/~1~0//5', 17 ],
+            [ $jsonDoc, '/foo/~0~0/~1~0/5', 17 ],
             [ $jsonDoc, '/bar/baz/qux/0', 1 ],
             [ $jsonDoc, '/bar/baz/qux/1', 'Lorem ipsum' ],
             [ $jsonDoc, '/bar/baz/qux/2', null ],
@@ -86,37 +89,23 @@ class JsonDocumentTest extends TestCase
             . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
         );
 
-        $jsonDoc->setNode('/foo/~1/~0~1', 43);
+        $jsonDoc->setNode(JsonPtr::newFromString('/foo/~1/~0~1'), 43);
 
         $this->assertSame(43, $jsonDoc->foo->{'/'}->{'~/'});
 
-        $jsonDoc->setNode('/bar/baz/qux/0', 'sed diam nonumy');
+        $jsonDoc->setNode(
+            JsonPtr::newFromString('/bar/baz/qux/0'),
+            'sed diam nonumy'
+        );
 
         $this->assertSame('sed diam nonumy', $jsonDoc->bar->baz->qux[0]);
 
-        $jsonDoc->setNode('/bar/baz/qux/6/0/2/QUUX/Corge', true);
+        $jsonDoc->setNode(
+            JsonPtr::newFromString('/bar/baz/qux/6/0/2/QUUX/Corge'),
+            true
+        );
 
         $this->assertSame(true, $jsonDoc->bar->baz->qux[6][0][2]->QUUX->Corge);
-    }
-
-    public function testException1()
-    {
-        $factory = new JsonDocumentFactory();
-
-        $jsonDoc = $factory->createFromUrl(
-            'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
-        );
-
-        $this->expectException(SyntaxError::class);
-        $this->expectExceptionMessage(
-            'Syntax error in "foo" at offset 0 ("foo") at URI <alcamo\uri\Uri>"file:/'
-        );
-        $this->expectExceptionMessage(
-            '"; not a valid JSON pointer'
-        );
-
-        $jsonDoc->getNode('foo');
     }
 
     public function testException2()
@@ -130,12 +119,13 @@ class JsonDocumentTest extends TestCase
 
         $this->expectException(NodeNotFound::class);
         $this->expectExceptionMessage(
-            "Node at \"/FOO\" not found in <" . JsonDocument::class
+            "Node at <" . JsonPtr::class . ">\"/FOO\" not found in <"
+            . JsonDocument::class
             . ">\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[...\" "
             . "at URI \"$url#/\""
         );
 
-        $jsonDoc->getNode('/FOO/1/2/bar');
+        $jsonDoc->getNode(JsonPtr::newFromString('/FOO/1/2/bar'));
     }
 
     public function testException3()
@@ -149,12 +139,13 @@ class JsonDocumentTest extends TestCase
 
         $this->expectException(NodeNotFound::class);
         $this->expectExceptionMessage(
-            "Node at \"/bar/baz/qux/42\" not found in <" . JsonDocument::class
+            "Node at <" . JsonPtr::class . ">\"/bar/baz/qux/42\" not found in <"
+            . JsonDocument::class
             . ">\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[...\" "
             . "at URI \"$url#/\""
         );
 
-        $jsonDoc->getNode('/bar/baz/qux/42/7/baz');
+        $jsonDoc->getNode(JsonPtr::newFromString('/bar/baz/qux/42/7/baz'));
     }
 
     public function testException4()
@@ -171,7 +162,7 @@ class JsonDocumentTest extends TestCase
             '"replacement of root node" not supported at URI'
         );
 
-        $jsonDoc->setNode('/', 'foo');
+        $jsonDoc->setNode(JsonPtr::newFromString('/'), 'foo');
     }
 
     public function testException5()
@@ -185,12 +176,13 @@ class JsonDocumentTest extends TestCase
 
         $this->expectException(NodeNotFound::class);
         $this->expectExceptionMessage(
-            "Node at \"/foo/bar\" not found in <" . JsonDocument::class
+            "Node at <" . JsonPtr::class . ">\"/foo/bar\" not found in <"
+            . JsonDocument::class
             . ">\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[...\" "
             . "at URI \"$url#/\""
         );
 
-        $jsonDoc->setNode('/foo/bar/1/2/3', 42);
+        $jsonDoc->setNode(JsonPtr::newFromString('/foo/bar/1/2/3'), 42);
     }
 
     public function testException6()
@@ -204,11 +196,15 @@ class JsonDocumentTest extends TestCase
 
         $this->expectException(NodeNotFound::class);
         $this->expectExceptionMessage(
-            "Node at \"/bar/baz/qux/43\" not found in <" . JsonDocument::class
+            "Node at <" . JsonPtr::class . ">\"/bar/baz/qux/43\" not found in <"
+            . JsonDocument::class
             . ">\"{\"foo\":{\"\/\":{\"~\/\":42},\"~~\":{\"\/~\":[...\" "
             . "at URI \"$url#/\""
         );
 
-        $jsonDoc->setNode('/bar/baz/qux/43/foo/bar', false);
+        $jsonDoc->setNode(
+            JsonPtr::newFromString('/bar/baz/qux/43/foo/bar'),
+            false
+        );
     }
 }
