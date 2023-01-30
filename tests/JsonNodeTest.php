@@ -46,6 +46,63 @@ class JsonNodeTest extends TestCase
                     ]
                 );
             }
+
+            if ($node instanceof JsonNode) {
+                $parentJsonPtr = $jsonPtr->getParent();
+
+                if (isset($parentJsonPtr)) {
+                    $parent = $doc->getNode($parentJsonPtr);
+
+                    if ($parent instanceof JsonNode) {
+                        if ($node->getParent() !== $parent) {
+                            /** @throw alcamo::exception::DataValidationFailed
+                             *  if a node's parent is not the parent node it
+                             *  should be */
+                            throw (new DataValidationFailed())->setMessageContext(
+                                [
+                                    'inData' => $node,
+                                    'atUri' => "{$doc->getBaseUri()}#$jsonPtr",
+                                    'extraMessage' =>
+                                    "\$parent_="
+                                    . ($node->getParent()
+                                     ? "\"{$node->getParent()->getJsonPtr()}\""
+                                     : "null")
+                                    . " differs from correct parent at $parentJsonPtr"
+                                ]
+                            );
+                        }
+                    } else {
+                        if ($node->getParent() !== null) {
+                            /** @throw alcamo::exception::DataValidationFailed
+                             *  if a node's parent is not null while it should
+                             *  be null because the parent is not a JSON
+                             *  object */
+                            throw (new DataValidationFailed())->setMessageContext(
+                                [
+                                    'inData' => $node,
+                                    'atUri' => "{$doc->getBaseUri()}#$jsonPtr",
+                                    'extraMessage' =>
+                                    "\$parent_ is not null when parent is not a JSON object"
+                                ]
+                            );
+                        }
+                    }
+                } else {
+                    if ($node->getParent() !== null) {
+                        /** @throw alcamo::exception::DataValidationFailed if
+                         *  a node's parent is not null while it should be
+                         *  null because the current node os the root node */
+                        throw (new DataValidationFailed())->setMessageContext(
+                            [
+                                'inData' => $node,
+                                'atUri' => "{$doc->getBaseUri()}#$jsonPtr",
+                                'extraMessage' =>
+                                "\$parent_ of root node is not null"
+                            ]
+                        );
+                    }
+                }
+            }
         }
     }
 
@@ -117,7 +174,7 @@ class JsonNodeTest extends TestCase
         );
     }
 
-    public function testClone()
+    public function testCreateDeepCopy()
     {
         $factory = new JsonDocumentFactory();
 
@@ -128,10 +185,13 @@ class JsonNodeTest extends TestCase
 
         $bar2 = $jsonDoc->bar->createDeepCopy();
 
-        $this->assertEquals($jsonDoc->bar, $bar2);
+        $this->assertEquals(json_encode($jsonDoc->bar), json_encode($bar2));
         $this->assertNotSame($jsonDoc->bar, $bar2);
 
-        $this->assertEquals($jsonDoc->bar->baz->qux[5], $bar2->baz->qux[5]);
+        $this->assertEquals(
+            json_encode($jsonDoc->bar->baz->qux[5]),
+            json_encode($bar2->baz->qux[5])
+        );
         $this->assertNotSame($jsonDoc->bar->baz->qux[5], $bar2->baz->qux[5]);
 
         $bar2->baz->qux[0] = 2;
@@ -146,7 +206,10 @@ class JsonNodeTest extends TestCase
 
         self::checkStructure($jsonDoc2);
 
-        $this->assertEquals($jsonDoc->bar, $jsonDoc2->bar);
+        $this->assertEquals(
+            json_encode($jsonDoc->bar),
+            json_encode($jsonDoc2->bar)
+        );
         $this->assertNotSame($jsonDoc->bar, $jsonDoc2->bar);
 
         $this->assertNotSame(
@@ -176,8 +239,12 @@ class JsonNodeTest extends TestCase
 
         $jsonDoc->bar->foo = $jsonDoc->importObjectNode(
             $jsonDoc2->foo,
-            JsonPtr::newFromString('/bar/foo')
+            JsonPtr::newFromString('/bar/foo'),
+            null,
+            $jsonDoc->bar
         );
+
+        self::checkStructure($jsonDoc);
 
         $jsonDoc->bar->baz->qux[2] =
             $jsonDoc->importObjectNode(

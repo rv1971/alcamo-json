@@ -221,7 +221,8 @@ class ReferenceResolver
                 $newNode = $node->importObjectNode(
                     $newNode,
                     $jsonPtr,
-                    JsonNode::COPY_UPON_IMPORT
+                    JsonNode::COPY_UPON_IMPORT,
+                    $subNode->getParent()
                 );
             } elseif (is_array($newNode)) {
                 $newNode = $node->importArrayNode(

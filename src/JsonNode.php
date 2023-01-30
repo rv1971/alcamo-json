@@ -12,6 +12,7 @@
 namespace alcamo\json;
 
 use alcamo\uri\Uri;
+use Ds\Map;
 use GuzzleHttp\Psr7\UriResolver;
 use Psr\Http\Message\UriInterface;
 
@@ -25,6 +26,7 @@ class JsonNode
     private $baseUri_;         ///< ?UriInterface
     private $ownerDocument_;   ///< self
     private $jsonPtr_;         ///< JsonPtr
+    private $parent_;          ///< ?self
 
     /**
      * @brief Construct from object or iterable, creating a public property
@@ -35,6 +37,8 @@ class JsonNode
      *
      * @param $jsonPtr JSON pointer to this node. If unset, the node is
      * assumed to be the root node.
+     *
+     * @param $parent Parent node.
      *
      * @param $data If JsonNode, a shallow copy of all its public properties
      * is created. (Use createDeepCopy() beforehand if you need a deep copy.)
@@ -47,13 +51,16 @@ class JsonNode
         object $data,
         ?UriInterface $baseUri = null,
         ?self $ownerDocument = null,
-        ?JsonPtr $jsonPtr = null
+        ?JsonPtr $jsonPtr = null,
+        ?self $parent = null
     ) {
         $this->baseUri_ = $baseUri ?? $ownerDocument->baseUri_ ?? null;
 
         $this->ownerDocument_ = $ownerDocument ?? $this;
 
         $this->jsonPtr_ = $jsonPtr ?? new JsonPtr();
+
+        $this->parent_ = $parent;
 
         if ($data instanceof self) {
             foreach ((array)$data as $key => $value) {
@@ -65,7 +72,8 @@ class JsonNode
             foreach ($data as $prop => $value) {
                 $this->$prop = $this->createNode(
                     $this->jsonPtr_->appendSegment($prop),
-                    $value
+                    $value,
+                    $this
                 );
             }
         }
@@ -98,6 +106,12 @@ class JsonNode
     public function getJsonPtr(): JsonPtr
     {
         return $this->jsonPtr_;
+    }
+
+    /// Parent node, if any
+    public function getParent(): ?self
+    {
+        return $this->parent_;
     }
 
     /**
@@ -150,6 +164,10 @@ class JsonNode
             $node->ownerDocument_ = $node;
         }
 
+        $oldNewMap = new Map();
+
+        $oldNewMap[$this] = $node;
+
         $walker = new RecursiveWalker(
             $node,
             RecursiveWalker::JSON_OBJECTS_ONLY
@@ -159,7 +177,10 @@ class JsonNode
         foreach ($walker as $pair) {
             $subNode = clone $pair[1];
             $subNode->ownerDocument_ = $node->ownerDocument_;
+            $subNode->parent_ = $oldNewMap[$subNode->parent_] ?? null;
             $walker->replaceCurrent($subNode);
+
+            $oldNewMap[$pair[1]] = $subNode;
         }
 
         return $node;
@@ -174,7 +195,7 @@ class JsonNode
      *
      * @sa [How to check if PHP array is associative or sequential?](https://stackoverflow.com/questions/173400/how-to-check-if-php-array-is-associative-or-sequential)
      */
-    public function createNode(JsonPtr $jsonPtr, $value)
+    public function createNode(JsonPtr $jsonPtr, $value, ?self $parent = null)
     {
         switch (true) {
             case is_array($value)
@@ -192,7 +213,7 @@ class JsonNode
 
                 return $result;
 
-            case is_object($value) || is_array($value):
+            case is_object($value):
                 $class = $this->ownerDocument_
                     ->getNodeClassToUse($jsonPtr, $value);
 
@@ -200,7 +221,8 @@ class JsonNode
                     (object)$value,
                     $this->baseUri_,
                     $this->ownerDocument_,
-                    $jsonPtr
+                    $jsonPtr,
+                    $parent
                 );
 
             default:
@@ -229,21 +251,30 @@ class JsonNode
     public function importObjectNode(
         JsonNode $node,
         JsonPtr $jsonPtr,
-        ?int $flags = null
+        ?int $flags = null,
+        ?self $parent = null
     ): self {
         if ($flags & self::COPY_UPON_IMPORT) {
             $class = $this->ownerDocument_
                 ->getNodeClassToUse($jsonPtr, $node);
 
-            $node = new $class(
+            $oldNewMap = new Map();
+
+            $newNode = new $class(
                 $node,
                 $node->baseUri_,
                 $this->ownerDocument_,
-                $jsonPtr
+                $jsonPtr,
+                $parent
             );
+
+            $oldNewMap[$node] = $newNode;
+
+            $node = $newNode;
         } else {
             $node->ownerDocument_ = $this->ownerDocument_;
             $node->jsonPtr_ = $jsonPtr;
+            $node->parent_ = $parent;
         }
 
         $walker = new RecursiveWalker(
@@ -259,14 +290,19 @@ class JsonNode
                 $class = $this->ownerDocument_
                     ->getNodeClassToUse($jsonPtr, $subNode);
 
-                $subNode = new $class(
+                $newNode = new $class(
                     $subNode,
                     $subNode->baseUri_,
                     $this->ownerDocument_,
-                    $jsonPtr
+                    $jsonPtr,
+                    isset($subNode->parent_)
+                    ? $oldNewMap[$subNode->parent_]
+                    : null
                 );
 
-                $walker->replaceCurrent($subNode);
+                $oldNewMap[$subNode] = $newNode;
+
+                $walker->replaceCurrent($newNode);
             } else {
                 $subNode->ownerDocument_ = $this->ownerDocument_;
                 $subNode->jsonPtr_ = $jsonPtr;
@@ -301,6 +337,8 @@ class JsonNode
         $walker =
             new RecursiveWalker($node, RecursiveWalker::JSON_OBJECTS_ONLY);
 
+        $oldNewMap = new Map();
+
         foreach ($walker as $pair) {
             [ $jsonPtrSegments, $subNode ] = $pair;
 
@@ -308,14 +346,19 @@ class JsonNode
                 $class = $this->ownerDocument_
                     ->getNodeClassToUse($jsonPtr, $subNode);
 
-                $subNode = new $class(
+                $newNode = new $class(
                     $subNode,
                     $subNode->baseUri_,
                     $this->ownerDocument_,
-                    $jsonPtr->appendSegments($jsonPtrSegments)
+                    $jsonPtr->appendSegments($jsonPtrSegments),
+                    isset($subNode->parent_)
+                    ? $oldNewMap[$subNode->parent_]
+                    : null
                 );
 
-                $walker->replaceCurrent($subNode);
+                $oldNewMap[$subNode] = $newNode;
+
+                $walker->replaceCurrent($newNode);
             } else {
                 $subNode->ownerDocument_ = $this->ownerDocument_;
                 $subNode->jsonPtr_ = $jsonPtr->appendSegments($jsonPtrSegments);

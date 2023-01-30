@@ -13,7 +13,8 @@ class JsonPtrSegmentsTest extends TestCase
     public function testNewFromString(
         $string,
         $expectedSegments,
-        $expectedIsEmpty
+        $expectedIsEmpty,
+        $expectedParent
     ): void {
         $jsonPtrSegments = JsonPtrSegments::newFromString($string);
 
@@ -31,13 +32,27 @@ class JsonPtrSegmentsTest extends TestCase
         $this->assertSame($string, (string)$jsonPtrSegments);
 
         $this->assertSame($expectedIsEmpty, $jsonPtrSegments->isEmpty());
+
+        if (isset($expectedParent)) {
+            $this->assertEquals(
+                $expectedParent,
+                (string)$jsonPtrSegments->getParent()
+            );
+        } else {
+            $this->assertNull($jsonPtrSegments->getParent());
+        }
     }
 
     public function newFromStringProvider(): array
     {
         return [
-            [ '', [], true ],
-            [ 'foo~0~01bar/~1baz~1qux~0~1', [ 'foo~~1bar', '/baz/qux~/' ], false ]
+            [ '', [], true, null ],
+            [
+                'foo~0~01bar/~1baz~1qux~0~1',
+                [ 'foo~~1bar', '/baz/qux~/' ],
+                false,
+                'foo~0~01bar'
+            ]
         ];
     }
 

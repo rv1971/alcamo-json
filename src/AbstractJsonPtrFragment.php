@@ -44,6 +44,17 @@ abstract class AbstractJsonPtrFragment implements
         return $this->data_;
     }
 
+    public function getParent(): ?self
+    {
+        if ($this->data_) {
+            $parentData = $this->data_;
+            array_pop($parentData);
+            return new static($parentData);
+        } else {
+            return null;
+        }
+    }
+
     public function appendSegment(string $segment): self
     {
         $segments = $this->data_;
