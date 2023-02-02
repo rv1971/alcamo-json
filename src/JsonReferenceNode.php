@@ -12,14 +12,16 @@ class JsonReferenceNode extends JsonNode
     public static function newFromUri(
         string $uri,
         ?UriInterface $baseUri = null,
-        JsonNode $ownerDocument,
-        JsonPtr $jsonPtr
+        ?JsonNode $ownerDocument = null,
+        ?JsonPtr $jsonPtr = null,
+        ?JsonNode $parent = null
     ): self {
         return new self(
             (object)[ '$ref' => $uri ],
             $baseUri,
             $ownerDocument,
-            $jsonPtr
+            $jsonPtr,
+            $parent
         );
     }
 }
