@@ -5,7 +5,7 @@ namespace alcamo\json;
 use alcamo\exception\SyntaxError;
 
 /**
- * @brief JSON pointer segments
+ * @brief Sequence of JSON pointer segments not beginning with slash
  *
  * @invariant Immutable class.
  *
@@ -13,26 +13,31 @@ use alcamo\exception\SyntaxError;
  */
 class JsonPtrSegments extends AbstractJsonPtrFragment
 {
-    private $string_;   ///< cached string representation
+    private $string_; ///< cached string representation
 
     public static function newFromString(string $string): self
     {
-        $segments = [];
+        if ($string === '') {
+            return new static();
+        }
 
-        if (($string[0] ?? null) === '/') {
+        if ($string[0] == '/') {
+            /** @throw alcamo::exception::SyntaxError if $string starts with
+             *  slash. */
             throw (new SyntaxError())->setMessageContext(
                 [
                     'inData' => $string,
                     'atOffset' => 0,
-                    'extraMessage' => 'JSON pointer segments must not begin with slash'
+                    'extraMessage' =>
+                    'sequence of JSON pointer segments must not start with slash'
                 ]
             );
         }
 
-        if ($string !== '') {
-            foreach (explode('/', $string) as $segment) {
-                $segments[] = strtr($segment, self::DECODE_MAP);
-            }
+        $segments = [];
+
+        foreach (explode('/', $string) as $segment) {
+            $segments[] = strtr($segment, self::DECODE_MAP);
         }
 
         return new static($segments);
@@ -53,7 +58,7 @@ class JsonPtrSegments extends AbstractJsonPtrFragment
         return $this->string_;
     }
 
-    /// Whether this is an empty sequence of segments
+    /// Whether this is an empty sequence
     public function isEmpty(): bool
     {
         return !isset($this->data_[0]);

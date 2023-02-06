@@ -13,13 +13,15 @@ use alcamo\exception\SyntaxError;
  */
 class JsonPtr extends AbstractJsonPtrFragment
 {
-    private $string_;   ///< cached string representation
+    private $string_; ///< cached string representation
 
     public static function newFromString(string $string): self
     {
-        $segments = [];
+        if ($string === '/') {
+            return new static();
+        }
 
-        if ($string[0] !== '/') {
+        if ($string[0] != '/') {
             throw (new SyntaxError())->setMessageContext(
                 [
                     'inData' => $string,
@@ -29,10 +31,10 @@ class JsonPtr extends AbstractJsonPtrFragment
             );
         }
 
-        if ($string != '/') {
-            foreach (explode('/', substr($string, 1)) as $segment) {
-                $segments[] = strtr($segment, self::DECODE_MAP);
-            }
+        $segments = [];
+
+        foreach (explode('/', substr($string, 1)) as $segment) {
+            $segments[] = strtr($segment, self::DECODE_MAP);
         }
 
         return new static($segments);

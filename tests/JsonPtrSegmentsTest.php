@@ -61,7 +61,7 @@ class JsonPtrSegmentsTest extends TestCase
         $this->expectException(SyntaxError::class);
         $this-> expectExceptionMessage(
             'Syntax error in "/foo" at offset 0 ("/foo"); '
-            . 'JSON pointer segments must not begin with slash'
+            . 'sequence of JSON pointer segments must not start with slash'
         );
 
         JsonPtrSegments::newFromString('/foo');

@@ -26,13 +26,16 @@ abstract class AbstractJsonPtrFragment implements
     use ReadArrayAccessTrait;
     use PreventWriteArrayAccessTrait;
 
+    /// Input to strtr() to encode a segment
     public const ENCODE_MAP = [ '~' => '~0', '/' => '~1' ];
+
+    /// Input to strtr() to decode a segment
     public const DECODE_MAP = [ '~1' => '/', '~0' => '~' ];
 
     protected $data_; ///< array of segment strings
 
     /**
-     * @param Numerically-indexed array of not yet encoded segments
+     * @param $segments Numerically-indexed array of not yet encoded segments
      */
     public function __construct(?array $segments = null)
     {
@@ -44,17 +47,15 @@ abstract class AbstractJsonPtrFragment implements
         return $this->data_;
     }
 
+    /// Return new object with last segment removed, or `null` if top-level
     public function getParent(): ?self
     {
-        if ($this->data_) {
-            $parentData = $this->data_;
-            array_pop($parentData);
-            return new static($parentData);
-        } else {
-            return null;
-        }
+        return $this->data_
+            ? new static(array_slice($this->data_, 0, -1))
+            : null;
     }
 
+    /// Return new object with new segment appended
     public function appendSegment(string $segment): self
     {
         $segments = $this->data_;
@@ -63,6 +64,7 @@ abstract class AbstractJsonPtrFragment implements
         return new static($segments);
     }
 
+    /// Return new object with new segments appended
     public function appendSegments(JsonPtrSegments $segments): self
     {
         return new static(array_merge($this->data_, $segments->data_));
