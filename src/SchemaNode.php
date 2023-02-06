@@ -9,22 +9,22 @@ class SchemaNode extends JsonNode
 {
     public const CLASS_MAP = [
         '$defs'                => SchemaMapNode::class,
-        'additionalProperties' => '#',
-        'allOf'                => [ '*' => '#' ],
-        'anyOf'                => [ '*' => '#' ],
-        'contains'             => '#',
+        'additionalProperties' => __CLASS__,
+        'allOf'                => [ '*' => __CLASS__ ],
+        'anyOf'                => [ '*' => __CLASS__ ],
+        'contains'             => __CLASS__,
         'default'              => JsonNode::class,
         'dependentSchemas'     => SchemaMapNode::class,
-        'else'                 => '#',
-        'examples'             => [ '*' => '#' ],
-        'if'                   => '#',
-        'items'                => '#',
-        'not'                  => '#',
-        'oneOf'                => [ '*' => '#' ],
+        'else'                 => __CLASS__,
+        'examples'             => [ '*' => __CLASS__ ],
+        'if'                   => __CLASS__,
+        'items'                => __CLASS__,
+        'not'                  => __CLASS__,
+        'oneOf'                => [ '*' => __CLASS__ ],
         'patternProperties'    => SchemaMapNode::class,
-        'prefixItems'          => [ '*' => '#' ],
+        'prefixItems'          => [ '*' => __CLASS__ ],
         'properties'           => SchemaMapNode::class,
-        'propertyNames'        => '#',
-        'then'                 => '#'
+        'propertyNames'        => __CLASS__,
+        'then'                 => __CLASS__
     ];
 }
