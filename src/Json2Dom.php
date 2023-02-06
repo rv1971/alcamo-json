@@ -79,11 +79,11 @@ class Json2Dom
             's:' . static::DOCUMENT_LOCAL_NAME
         );
 
-        if ($jsonNode->getBaseUri() !== null) {
+        if ($jsonNode->getOwnerDocument()->getBaseUri() !== null) {
             $domDocument->documentElement->setAttributeNS(
                 self::XML_NS,
                 'xml:base',
-                $jsonNode->getBaseUri()
+                $jsonNode->getOwnerDocument()->getBaseUri()
             );
         }
 

@@ -114,7 +114,10 @@ class JsonNodeTest extends TestCase
         $expectedBaseUri =
             'file://' . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME);
 
-        $this->assertSame($expectedBaseUri, (string)$node->getBaseUri());
+        $this->assertSame(
+            $expectedBaseUri,
+            (string)$node->getOwnerDocument()->getBaseUri()
+        );
 
         $this->assertSame($expectedJsonPtr, (string)$node->getJsonPtr());
 

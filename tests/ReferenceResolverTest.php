@@ -20,7 +20,6 @@ class MyReferenceResolver extends ReferenceResolver
 
                 return JsonReferenceNode::newFromUri(
                     'http://www.example.org#bar',
-                    $node->getBaseUri(),
                     $node->getOwnerDocument(),
                     $node->getJsonPtr()
                 );
@@ -47,7 +46,6 @@ class MyReferenceResolver extends ReferenceResolver
 
                 return JsonReferenceNode::newFromUri(
                     'http://www.example.org#bar',
-                    $node->getBaseUri(),
                     $node->getOwnerDocument(),
                     $node->getJsonPtr()
                 );
@@ -247,9 +245,6 @@ class ReferenceResolverTest extends TestCase
     // replace a document node by another document node
     public function testResolveExternal1()
     {
-        $barUri = 'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::BAR_FILENAME);
-
         $bazUri = 'file://'
             . str_replace(DIRECTORY_SEPARATOR, '/', self::BAZ_FILENAME);
 
@@ -279,8 +274,6 @@ class ReferenceResolverTest extends TestCase
 
         $this->assertFalse(isset($jsonDoc2->foo->{'$ref'}));
 
-        $this->assertSame($barUri, (string)$jsonDoc2->getBaseUri());
-
         $jsonDoc2 = $jsonDoc2->resolveReferences();
 
         $this->assertNotEquals($jsonDoc, $jsonDoc2);
@@ -294,9 +287,6 @@ class ReferenceResolverTest extends TestCase
     // other internal/external replacements
     public function testResolveExternal2()
     {
-        $barUri = 'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::BAR_FILENAME);
-
         $quxUri = 'file://'
             . str_replace(DIRECTORY_SEPARATOR, '/', self::QUX_FILENAME);
 
@@ -327,8 +317,6 @@ class ReferenceResolverTest extends TestCase
         $this->assertSame(null, $jsonDoc2->quux);
 
         $this->assertSame($jsonDoc->getBaseUri(), $jsonDoc2->getBaseUri());
-
-        $this->assertSame($barUri, (string)$jsonDoc2->bar[1]->getBaseUri());
 
         // node URI is computed from document URI
         $this->assertEquals(

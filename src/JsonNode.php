@@ -23,14 +23,17 @@ class JsonNode
 {
     public const COPY_UPON_IMPORT = 1; ///< Clone nodes in import methods
 
-    private $baseUri_;         ///< ?UriInterface
-    private $ownerDocument_;   ///< self
-    private $jsonPtr_;         ///< JsonPtr
-    private $parent_;          ///< ?self
+    private $ownerDocument_; ///< self
+    private $jsonPtr_;       ///< JsonPtr
+    private $parent_;        ///< ?self
 
     /**
      * @brief Construct from object or iterable, creating a public property
      * for each key
+     *
+     * @param $data If JsonNode, a shallow copy of all its public properties
+     * is created. (Use createDeepCopy() beforehand if you need a deep copy.)
+     * Otherwise use createNode() to build a JSON tree recursively.
      *
      * @param $ownerDocument Document this node belongs to. If unset, the node
      * is considered to be itself its owner document.
@@ -39,42 +42,34 @@ class JsonNode
      * assumed to be the root node.
      *
      * @param $parent Parent node.
-     *
-     * @param $data If JsonNode, a shallow copy of all its public properties
-     * is created. (Use createDeepCopy() beforehand if you need a deep copy.)
-     * Otherwise use createNode() to build a JSON tree recursively.
-     *
-     * @param $baseUri URI used to to resolve any relative URIs in the
-     * document.
      */
     public function __construct(
         object $data,
-        ?UriInterface $baseUri = null,
-        ?self $ownerDocument = null,
-        ?JsonPtr $jsonPtr = null,
+        JsonDocumentInterface $ownerDocument,
+        JsonPtr $jsonPtr,
         ?self $parent = null
     ) {
-        $this->baseUri_ = $baseUri ?? $ownerDocument->baseUri_ ?? null;
-
-        $this->ownerDocument_ = $ownerDocument ?? $this;
-
-        $this->jsonPtr_ = $jsonPtr ?? new JsonPtr();
-
+        $this->ownerDocument_ = $ownerDocument;
+        $this->jsonPtr_ = $jsonPtr;
         $this->parent_ = $parent;
 
         if ($data instanceof self) {
-            foreach ((array)$data as $key => $value) {
-                if (((string)$key)[0] != "\0") {
-                    $this->$key = $value;
+            foreach ((array)$data as $prop => $value) {
+                // copy public properties only
+                if (((string)$prop)[0] != "\0") {
+                    $this->$prop = $value;
                 }
             }
         } else {
-            foreach ($data as $prop => $value) {
-                $this->$prop = $this->createNode(
-                    $this->jsonPtr_->appendSegment($prop),
-                    $value,
-                    $this
-                );
+            foreach ((array)$data as $prop => $value) {
+                // copy public properties only
+                if (((string)$prop)[0] != "\0") {
+                    $this->$prop = $this->createNode(
+                        $value,
+                        $this->jsonPtr_->appendSegment($prop),
+                        $this
+                    );
+                }
             }
         }
     }
@@ -85,19 +80,8 @@ class JsonNode
         return $this->toJsonText();
     }
 
-    /// Base URI, if specified
-    public function getBaseUri(): ?UriInterface
-    {
-        return $this->baseUri_;
-    }
-
-    /**
-     * @brief Get the document (i.e. the ultimate parent) this node belongs to
-     *
-     * The owner document does not need to be of a specific document type. It
-     * can be a JsonNode or any class derived from it.
-     */
-    public function getOwnerDocument(): self
+    /// Get the document (i.e. the ultimate parent) this node belongs to
+    public function getOwnerDocument(): JsonDocumentInterface
     {
         return $this->ownerDocument_;
     }
@@ -127,8 +111,10 @@ class JsonNode
             ? $this->jsonPtr_->appendSegment($segment)
             : $this->jsonPtr_;
 
-        return isset($this->ownerDocument_->baseUri_)
-            ? $this->ownerDocument_->baseUri_->withFragment((string)$jsonPtr)
+        $baseUri = $this->ownerDocument_->getBaseUri();
+
+        return isset($baseUri)
+            ? $baseUri->withFragment((string)$jsonPtr)
             : new Uri("#$jsonPtr");
     }
 
@@ -143,8 +129,10 @@ class JsonNode
             $uri = new Uri($uri);
         }
 
-        return isset($this->baseUri_)
-            ? UriResolver::resolve($this->baseUri_, $uri)
+        $baseUri = $this->ownerDocument_->getBaseUri();
+
+        return isset($baseUri)
+            ? UriResolver::resolve($baseUri, $uri)
             : $uri;
     }
 
@@ -157,10 +145,12 @@ class JsonNode
     {
         $node = clone $this;
 
-        /** If getJsonPtr() is the root pointer, the copy is its own owner
-         *  document. Otherwise it belongs to the same document as the
-         *  original node. */
-        if ($node->jsonPtr_->isRoot()) {
+        $node->jsonPtr_ = clone $node->jsonPtr_;
+
+        /** When cloning a document, the copy is its own owner document and
+         *  the parent remains `null`. Otherwise it belongs to the same
+         *  document as the original node and has the same parent. */
+        if ($this->ownerDocument_ === $this) {
             $node->ownerDocument_ = $node;
         }
 
@@ -168,6 +158,7 @@ class JsonNode
 
         $oldNewMap[$this] = $node;
 
+        /** Recursively replace descendent JSON objects by clones. */
         $walker = new RecursiveWalker(
             $node,
             RecursiveWalker::JSON_OBJECTS_ONLY
@@ -187,7 +178,7 @@ class JsonNode
     }
 
     /**
-     * @brief Create a JSON node
+     * @brief Create a node in a JSON tree
      * - If $value is a nonempty numerically-indexed array, create an array.
      * - Else, if $value is an object or associative array, call createNode()
      *   recursively.
@@ -195,19 +186,19 @@ class JsonNode
      *
      * @sa [How to check if PHP array is associative or sequential?](https://stackoverflow.com/questions/173400/how-to-check-if-php-array-is-associative-or-sequential)
      */
-    public function createNode(JsonPtr $jsonPtr, $value, ?self $parent = null)
+    public function createNode($value, JsonPtr $jsonPtr, ?self $parent = null)
     {
         switch (true) {
             case is_array($value)
                 && ($value == []
-                    || (isset($value[0]) || array_key_exists(0, $value))
-                    && array_keys($value) === range(0, count($value) - 1)):
+                    || ((isset($value[0]) || array_key_exists(0, $value))
+                        && array_keys($value) === range(0, count($value) - 1))):
                 $result = [];
 
                 foreach ($value as $prop => $subValue) {
                     $result[] = $this->createNode(
-                        $jsonPtr->appendSegment($prop),
-                        $subValue
+                        $subValue,
+                        $jsonPtr->appendSegment($prop)
                     );
                 }
 
@@ -219,7 +210,6 @@ class JsonNode
 
                 return new $class(
                     (object)$value,
-                    $this->baseUri_,
                     $this->ownerDocument_,
                     $jsonPtr,
                     $parent
@@ -255,14 +245,12 @@ class JsonNode
         ?self $parent = null
     ): self {
         if ($flags & self::COPY_UPON_IMPORT) {
-            $class = $this->ownerDocument_
-                ->getNodeClassToUse($jsonPtr, $node);
+            $class = $this->ownerDocument_->getNodeClassToUse($jsonPtr, $node);
 
             $oldNewMap = new Map();
 
             $newNode = new $class(
                 $node,
-                $node->baseUri_,
                 $this->ownerDocument_,
                 $jsonPtr,
                 $parent
@@ -292,7 +280,6 @@ class JsonNode
 
                 $newNode = new $class(
                     $subNode,
-                    $subNode->baseUri_,
                     $this->ownerDocument_,
                     $jsonPtr,
                     isset($subNode->parent_)
@@ -348,7 +335,6 @@ class JsonNode
 
                 $newNode = new $class(
                     $subNode,
-                    $subNode->baseUri_,
                     $this->ownerDocument_,
                     $jsonPtr->appendSegments($jsonPtrSegments),
                     isset($subNode->parent_)

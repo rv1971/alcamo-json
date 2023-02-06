@@ -2,7 +2,7 @@
 
 namespace alcamo\json;
 
-class FooDocument extends JsonNode
+class FooDocument extends JsonNode implements JsonDocumentInterface
 {
     use TypedNodeDocumentTrait;
 

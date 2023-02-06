@@ -14,19 +14,28 @@ use Psr\Http\Message\UriInterface;
  */
 trait JsonDocumentTrait
 {
+    private $baseUri_;         ///< ?UriInterface
     private $documentFactory_; ///< JsonDocumentFactory
 
     /**
      * @brief Construct a top-level JsonNode
      *
      * The signature prevents passing a wrong $ownerDocument of $jsonPtr to
-     * the JsonNnode constructor.
+     * the JsonNode constructor.
      */
     public function __construct(
         object $data,
         ?UriInterface $baseUri = null
     ) {
-        return parent::__construct($data, $baseUri);
+        parent::__construct($data, $this, new JsonPtr());
+
+        $this->baseUri_ = $baseUri;
+    }
+
+    /// Base URI, if specified
+    public function getBaseUri(): ?UriInterface
+    {
+        return $this->baseUri_;
     }
 
     public function getDocumentFactory(): JsonDocumentFactory
