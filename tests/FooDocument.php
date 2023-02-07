@@ -2,6 +2,8 @@
 
 namespace alcamo\json;
 
+use Psr\Http\Message\UriInterface;
+
 class FooDocument extends JsonNode implements JsonDocumentInterface
 {
     use TypedNodeDocumentTrait;
@@ -11,6 +13,11 @@ class FooDocument extends JsonNode implements JsonDocumentInterface
         'bar' => BarNode::class,
         '*'   => OtherNode::class
     ];
+
+    public function rebase(UriInterface $oldBase): void
+    {
+        $this->oldBase = (string)$oldBase;
+    }
 }
 
 class FooNode extends JsonNode
@@ -23,6 +30,10 @@ class FooNode extends JsonNode
 
 class SlashNode extends JsonNode
 {
+    public function rebase(UriInterface $oldBase): void
+    {
+        $this->oldBaseSlash = (string)$oldBase;
+    }
 }
 
 class TildeTildeNode extends JsonNode
@@ -60,6 +71,10 @@ class QuxNode extends JsonNode
 
 class QuuxNode extends BarNode
 {
+    public function rebase(UriInterface $oldBase): void
+    {
+        $this->oldBaseQuux = (string)$oldBase;
+    }
 }
 
 class Foo2Node extends JsonNode
@@ -68,4 +83,15 @@ class Foo2Node extends JsonNode
 
 class OtherNode extends JsonNode
 {
+    public const CLASS_MAP = [ '*' => '#' ];
+
+    public function rebase(UriInterface $oldBase): void
+    {
+        $this->oldBaseOther = (string)$oldBase;
+    }
+}
+
+class FooDocumentFactory extends JsonDocumentFactory
+{
+    public const DOCUMENT_CLASS = FooDocument::class;
 }

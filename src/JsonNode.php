@@ -244,6 +244,15 @@ class JsonNode
         ?int $flags = null,
         ?self $parent = null
     ): self {
+        $oldBaseUri = $node->getOwnerDocument()->getBaseUri();
+
+        /* Rebase only if base URI has effectively changed. */
+        if (
+            (string)$oldBaseUri == (string)$this->ownerDocument_->getBaseUri()
+        ) {
+            $oldBaseUri = null;
+        }
+
         if ($flags & self::COPY_UPON_IMPORT) {
             $class = $this->ownerDocument_->getNodeClassToUse($jsonPtr, $node);
 
@@ -256,6 +265,10 @@ class JsonNode
                 $parent
             );
 
+            if (isset($oldBaseUri)) {
+                $newNode->rebase($oldBaseUri);
+            }
+
             $oldNewMap[$node] = $newNode;
 
             $node = $newNode;
@@ -263,6 +276,10 @@ class JsonNode
             $node->ownerDocument_ = $this->ownerDocument_;
             $node->jsonPtr_ = $jsonPtr;
             $node->parent_ = $parent;
+
+            if (isset($oldBaseUri)) {
+                $node->rebase($oldBaseUri);
+            }
         }
 
         $walker = new RecursiveWalker(
@@ -287,12 +304,20 @@ class JsonNode
                     : null
                 );
 
+                if (isset($oldBaseUri)) {
+                    $newNode->rebase($oldBaseUri);
+                }
+
                 $oldNewMap[$subNode] = $newNode;
 
                 $walker->replaceCurrent($newNode);
             } else {
                 $subNode->ownerDocument_ = $this->ownerDocument_;
                 $subNode->jsonPtr_ = $jsonPtr;
+
+                if (isset($oldBaseUri)) {
+                    $subNode->rebase($oldBaseUri);
+                }
             }
         }
 
@@ -329,6 +354,15 @@ class JsonNode
         foreach ($walker as $pair) {
             [ $jsonPtrSegments, $subNode ] = $pair;
 
+            if (!isset($rebaseIsNeeded)) {
+                $oldBaseUri = $subNode->getOwnerDocument()->getBaseUri();
+
+                /* Rebase only if base URI has effectively changed. */
+                $rebaseIsNeeded =
+                    (string)$oldBaseUri
+                    != (string)$this->ownerDocument_->getBaseUri();
+            }
+
             if ($flags & self::COPY_UPON_IMPORT) {
                 $class = $this->ownerDocument_
                     ->getNodeClassToUse($jsonPtr, $subNode);
@@ -341,6 +375,10 @@ class JsonNode
                     ? $oldNewMap[$subNode->parent_]
                     : null
                 );
+
+                if ($rebaseIsNeeded) {
+                    $newNode->rebase($oldBaseUri);
+                }
 
                 $oldNewMap[$subNode] = $newNode;
 
@@ -370,5 +408,14 @@ class JsonNode
         }
 
         return $resolver->resolve($this);
+    }
+
+    /**
+     * @brief Do any necessary modifications after change of document base URI
+     *
+     * Typically this modifies any properties containing relative URIs.
+     */
+    protected function rebase(UriInterface $oldBase): void
+    {
     }
 }

@@ -3,7 +3,10 @@
 namespace alcamo\json;
 
 use alcamo\exception\{DataValidationFailed, Recursion};
+use alcamo\uri\FileUriFactory;
 use PHPUnit\Framework\TestCase;
+
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'FooDocument.php';
 
 /*
  * JsonNode::resolveUri() is implicitely tested in ReferenceResolverTest.php
@@ -112,7 +115,7 @@ class JsonNodeTest extends TestCase
     public function testGetJsonPtr($node, $expectedJsonPtr, $expectedKey)
     {
         $expectedBaseUri =
-            'file://' . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME);
+            (string)(new FileUriFactory())->create(self::FOO_FILENAME);
 
         $this->assertSame(
             $expectedBaseUri,
@@ -139,8 +142,7 @@ class JsonNodeTest extends TestCase
         $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
-            'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+            (new FileUriFactory())->create(self::FOO_FILENAME)
         );
 
         self::checkStructure($jsonDoc);
@@ -182,8 +184,7 @@ class JsonNodeTest extends TestCase
         $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
-            'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+            (new FileUriFactory())->create(self::FOO_FILENAME)
         );
 
         $bar2 = $jsonDoc->bar->createDeepCopy();
@@ -231,13 +232,11 @@ class JsonNodeTest extends TestCase
         $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
-            'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+            (new FileUriFactory())->create(self::FOO_FILENAME)
         );
 
         $jsonDoc2 = $factory->createFromUrl(
-            'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+            (new FileUriFactory())->create(self::FOO_FILENAME)
         );
 
         $jsonDoc->bar->foo = $jsonDoc->importObjectNode(
@@ -271,8 +270,7 @@ class JsonNodeTest extends TestCase
         $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
-            'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
+            (new FileUriFactory())->create(self::FOO_FILENAME)
         );
 
         $jsonDoc2 = $jsonDoc->createDeepCopy();
@@ -301,5 +299,66 @@ class JsonNodeTest extends TestCase
             json_encode($jsonDoc->bar->baz->qux[6][1]),
             json_encode($jsonDoc->foo[0][1])
         );
+    }
+
+    public function testRebase(): void
+    {
+        $baseUri = (new FileUriFactory())->create(self::FOO_FILENAME);
+
+        $factory = new FooDocumentFactory();
+
+        $jsonDoc = $factory->createFromUrl($baseUri);
+
+        // rebase due to change in base URI
+
+        $jsonDoc2 = new FooDocument((object)[]);
+
+        $node2a = $jsonDoc2->importObjectNode(
+            $jsonDoc->createDeepCopy(),
+            JsonPtr::newFromString('/test')
+        );
+
+        $this->assertSame((string)$baseUri, $node2a->oldBase);
+
+        $this->assertSame((string)$baseUri, $node2a->foo->{'/'}->oldBaseSlash);
+
+        $this->assertSame(
+            (string)$baseUri,
+            $node2a->bar->baz->qux[6][0][2]->oldBaseQuux);
+
+        $node2b = $jsonDoc2->importObjectNode(
+            $jsonDoc->createDeepCopy(),
+            JsonPtr::newFromString('/test'),
+            JsonNode::COPY_UPON_IMPORT
+        );
+
+        $this->assertSame((string)$baseUri, $node2b->oldBaseOther);
+
+        $this->assertSame((string)$baseUri, $node2b->foo->oldBaseOther);
+
+        // no rebase because base URI does not change
+
+        $jsonDoc3 = $jsonDoc->createDeepCopy();
+
+        $node3a = $jsonDoc3->importObjectNode(
+            $jsonDoc->createDeepCopy(),
+            JsonPtr::newFromString('/test')
+        );
+
+        $this->assertFalse(isset($node3a->oldBase));
+
+        $this->assertFalse(isset($node3a->foo->{'/'}->oldBaseSlash));
+
+        $this->assertFalse(isset($node3a->bar->baz->qux[6][0][2]->oldBaseQuux));
+
+        $node3b = $jsonDoc3->importObjectNode(
+            $jsonDoc->createDeepCopy(),
+            JsonPtr::newFromString('/test'),
+            JsonNode::COPY_UPON_IMPORT
+        );
+
+        $this->assertFalse(isset($node3a->oldBaseOther));
+
+        $this->assertFalse(isset($node3a->foo->oldBaseOther));
     }
 }
