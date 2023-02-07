@@ -324,7 +324,8 @@ class JsonNodeTest extends TestCase
 
         $this->assertSame(
             (string)$baseUri,
-            $node2a->bar->baz->qux[6][0][2]->oldBaseQuux);
+            $node2a->bar->baz->qux[6][0][2]->oldBaseQuux
+        );
 
         $node2b = $jsonDoc2->importObjectNode(
             $jsonDoc->createDeepCopy(),
