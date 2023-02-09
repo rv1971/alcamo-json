@@ -244,7 +244,7 @@ class JsonNode
         ?int $flags = null,
         ?self $parent = null
     ): self {
-        $oldBaseUri = $node->getOwnerDocument()->getBaseUri();
+        $oldBaseUri = $node->ownerDocument_->getBaseUri();
 
         /* Rebase only if base URI has effectively changed. */
         if (
@@ -355,12 +355,12 @@ class JsonNode
             [ $jsonPtrSegments, $subNode ] = $pair;
 
             if (!isset($rebaseIsNeeded)) {
-                $oldBaseUri = $subNode->getOwnerDocument()->getBaseUri();
+                $oldBaseUri = $subNode->ownerDocument_->getBaseUri();
 
                 /* Rebase only if base URI has effectively changed. */
-                $rebaseIsNeeded =
-                    (string)$oldBaseUri
-                    != (string)$this->ownerDocument_->getBaseUri();
+                $rebaseIsNeeded = isset($oldBaseUri)
+                    && ((string)$oldBaseUri
+                        != (string)$this->ownerDocument_->getBaseUri());
             }
 
             if ($flags & self::COPY_UPON_IMPORT) {
