@@ -14,13 +14,23 @@ class JsonDocumentFactory
     /// Class to use to create a document
     public const DOCUMENT_CLASS = JsonDocument::class;
 
-    private $depth_; /// int
-    private $flags_; /// int
+    private $documentClass_; ///< string
+    private $depth_; ///< int
+    private $flags_; ///< int
 
-    public function __construct(?int $depth = null, ?int $flags = null)
-    {
+    public function __construct(
+        ?string $documentClass = null,
+        ?int $depth = null,
+        ?int $flags = null
+    ) {
+        $this->documentClass_ = $documentClass ?? static::DOCUMENT_CLASS;
         $this->depth_ = $depth ?? 512;
         $this->flags_ = $flags ?? JSON_THROW_ON_ERROR;
+    }
+
+    public function getClass(): string
+    {
+        return $this->documentClass_;
     }
 
     /// Wrapper for json_decode()
@@ -31,9 +41,12 @@ class JsonDocumentFactory
 
     public function createFromJsonText(
         string $jsonText,
-        ?UriInterface $baseUri = null
+        ?UriInterface $baseUri = null,
+        ?string $documentClass = null
     ): JsonNode {
-        $class = static::DOCUMENT_CLASS;
+        if (!isset($documentClass)) {
+            $documentClass = $this->documentClass_;
+        }
 
         if (isset($baseUri) && !$baseUri instanceof UriInterface) {
             $baseUri = new Uri($baseUri);
@@ -41,7 +54,7 @@ class JsonDocumentFactory
 
         try {
             return
-                new $class($this->decodeJson($jsonText), $baseUri);
+                new $documentClass($this->decodeJson($jsonText), $baseUri);
         } catch (\Throwable $e) {
             if ($e instanceof ExceptionInterface) {
                 if (isset($e->getMessageContext()['atUri'])) {
@@ -59,7 +72,7 @@ class JsonDocumentFactory
      * @param $url If this URL contains a fragment, return the node indicated
      * by the fragment, otherwise the entire document.
      */
-    public function createFromUrl($url)
+    public function createFromUrl($url, ?string $documentClass = null)
     {
         if (!$url instanceof UriInterface) {
             $url = new Uri($url);
@@ -68,13 +81,18 @@ class JsonDocumentFactory
         $fragment = $url->getFragment();
 
         if ($fragment == '') {
-            return static::createFromJsonText(file_get_contents($url), $url);
+            return static::createFromJsonText(
+                file_get_contents($url),
+                $url,
+                $documentClass
+            );
         } else {
             $urlWithoutFragment = $url->withFragment('');
 
             return static::createFromJsonText(
                 file_get_contents($urlWithoutFragment),
-                $urlWithoutFragment
+                $urlWithoutFragment,
+                $documentClass
             )->getNode(JsonPtr::newFromString($fragment));
         }
     }

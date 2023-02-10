@@ -13,6 +13,8 @@ class JsonDocumentFactoryTest extends TestCase
     {
         $factory = new JsonDocumentFactory();
 
+        $this->assertSame(JsonDocument::class, $factory->getClass());
+
         $jsonDoc = $factory->createFromUrl(self::FOO_FILENAME);
 
         $this->assertInstanceOf(JsonDocument::class, $jsonDoc);
@@ -31,7 +33,7 @@ class JsonDocumentFactoryTest extends TestCase
 
         $this->assertSame(42, $jsonDoc2->{'~/'});
 
-        $factory2 = new JsonDocumentFactory(null, JSON_BIGINT_AS_STRING);
+        $factory2 = new JsonDocumentFactory(null, null, JSON_BIGINT_AS_STRING);
 
         $bigint = PHP_INT_MAX . PHP_INT_MAX;
 
