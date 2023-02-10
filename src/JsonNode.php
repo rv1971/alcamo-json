@@ -23,7 +23,7 @@ class JsonNode
 {
     public const COPY_UPON_IMPORT = 1; ///< Clone nodes in import methods
 
-    private $ownerDocument_; ///< self
+    private $ownerDocument_; ///< JsonDocument
     private $jsonPtr_;       ///< JsonPtr
     private $parent_;        ///< ?self
 
@@ -33,21 +33,20 @@ class JsonNode
      *
      * @param $data If JsonNode, a shallow copy of all its public properties
      * is created. (Use createDeepCopy() beforehand if you need a deep copy.)
-     * Otherwise use createNode() to build a JSON tree recursively.
+     * Otherwise use JsonDocument::createNode() to build a JSON tree
+     * recursively.
      *
-     * @param $ownerDocument Document this node belongs to. If unset, the node
-     * is considered to be itself its owner document.
+     * @param $ownerDocument Document this node belongs to.
      *
-     * @param $jsonPtr JSON pointer to this node. If unset, the node is
-     * assumed to be the root node.
+     * @param $jsonPtr JSON pointer to this node.
      *
-     * @param $parent Parent node.
+     * @param $parent Parent node, if any.
      */
     public function __construct(
         object $data,
-        JsonDocumentInterface $ownerDocument,
+        JsonDocument $ownerDocument,
         JsonPtr $jsonPtr,
-        ?self $parent = null
+        ?JsonNode $parent = null
     ) {
         $this->ownerDocument_ = $ownerDocument;
         $this->jsonPtr_ = $jsonPtr;
@@ -64,7 +63,7 @@ class JsonNode
             foreach ((array)$data as $prop => $value) {
                 // copy public properties only
                 if (((string)$prop)[0] != "\0") {
-                    $this->$prop = $this->createNode(
+                    $this->$prop = $this->ownerDocument_->createNode(
                         $value,
                         $this->jsonPtr_->appendSegment($prop),
                         $this
@@ -81,7 +80,7 @@ class JsonNode
     }
 
     /// Get the document (i.e. the ultimate parent) this node belongs to
-    public function getOwnerDocument(): JsonDocumentInterface
+    public function getOwnerDocument(): JsonDocument
     {
         return $this->ownerDocument_;
     }
@@ -178,49 +177,6 @@ class JsonNode
     }
 
     /**
-     * @brief Create a node in a JSON tree
-     * - If $value is a nonempty numerically-indexed array, create an array.
-     * - Else, if $value is an object or associative array, call createNode()
-     *   recursively.
-     * - Else, use $value as-is.
-     *
-     * @sa [How to check if PHP array is associative or sequential?](https://stackoverflow.com/questions/173400/how-to-check-if-php-array-is-associative-or-sequential)
-     */
-    public function createNode($value, JsonPtr $jsonPtr, ?self $parent = null)
-    {
-        switch (true) {
-            case is_array($value)
-                && ($value == []
-                    || ((isset($value[0]) || array_key_exists(0, $value))
-                        && array_keys($value) === range(0, count($value) - 1))):
-                $result = [];
-
-                foreach ($value as $prop => $subValue) {
-                    $result[] = $this->createNode(
-                        $subValue,
-                        $jsonPtr->appendSegment($prop)
-                    );
-                }
-
-                return $result;
-
-            case is_object($value):
-                $class = $this->ownerDocument_
-                    ->getNodeClassToUse($jsonPtr, $value);
-
-                return new $class(
-                    (object)$value,
-                    $this->ownerDocument_,
-                    $jsonPtr,
-                    $parent
-                );
-
-            default:
-                return $value;
-        }
-    }
-
-    /**
      * @param $node Node to import into the current document
      *
      * @param $jsonPtr JSON pointer pointing to the new node
@@ -235,7 +191,7 @@ class JsonNode
      *
      * Even though the only member of `$this` used in this method is @ref
      * $ownerDocument_, this method is implemented in JsonNode and not in
-     * JsonDocumentTrait in order to have write access to $node's @ref
+     * JsonDocument in order to have write access to $node's @ref
      * $ownerDocument_ and @ref $jsonPtr_.
      */
     public function importObjectNode(
@@ -417,5 +373,11 @@ class JsonNode
      */
     protected function rebase(UriInterface $oldBase): void
     {
+        if (isset($this->{'$ref'})) {
+            $this->{'$ref'} = (string)UriResolver::resolve(
+                $oldBase,
+                new Uri($this->{'$ref'})
+            );
+        }
     }
 }

@@ -19,7 +19,7 @@ class JsonNodeTest extends TestCase
     {
         foreach (
             new RecursiveWalker(
-                $doc,
+                $doc->getRoot(),
                 RecursiveWalker::JSON_OBJECTS_ONLY
             ) as $pair
         ) {
@@ -31,7 +31,7 @@ class JsonNodeTest extends TestCase
                 throw (new DataValidationFailed())->setMessageContext(
                     [
                         'inData' => $node,
-                        'atUri' => "{$doc->getBaseUri()}#$jsonPtr",
+                        'atUri' => $node->getUri(),
                         'extraMessage' => "\$ownerDocument_ differs from document owning this node"
                     ]
                 );
@@ -43,7 +43,7 @@ class JsonNodeTest extends TestCase
                 throw (new DataValidationFailed())->setMessageContext(
                     [
                         'inData' => $node,
-                        'atUri' => "{$doc->getBaseUri()}#$jsonPtr",
+                        'atUri' => $node->getUri(),
                         'extraMessage' =>
                         "\$jsonPtr_=\"{$node->getJsonPtr()}\" differs from actual position \"$jsonPtr\""
                     ]
@@ -64,7 +64,7 @@ class JsonNodeTest extends TestCase
                             throw (new DataValidationFailed())->setMessageContext(
                                 [
                                     'inData' => $node,
-                                    'atUri' => "{$doc->getBaseUri()}#$jsonPtr",
+                                    'atUri' => $node->getUri(),
                                     'extraMessage' =>
                                     "\$parent_="
                                     . ($node->getParent()
@@ -83,7 +83,7 @@ class JsonNodeTest extends TestCase
                             throw (new DataValidationFailed())->setMessageContext(
                                 [
                                     'inData' => $node,
-                                    'atUri' => "{$doc->getBaseUri()}#$jsonPtr",
+                                    'atUri' => $node->getUri(),
                                     'extraMessage' =>
                                     "\$parent_ is not null when parent is not a JSON object"
                                 ]
@@ -98,7 +98,7 @@ class JsonNodeTest extends TestCase
                         throw (new DataValidationFailed())->setMessageContext(
                             [
                                 'inData' => $node,
-                                'atUri' => "{$doc->getBaseUri()}#$jsonPtr",
+                                'atUri' => $node->getUri(),
                                 'extraMessage' =>
                                 "\$parent_ of root node is not null"
                             ]
@@ -147,15 +147,15 @@ class JsonNodeTest extends TestCase
 
         self::checkStructure($jsonDoc);
 
-        $qux = $jsonDoc->bar->baz->qux;
+        $qux = $jsonDoc->getRoot()->bar->baz->qux;
 
         return [
-            [ $jsonDoc, '/', null ],
-            [ $jsonDoc->foo, '/foo', 'foo' ],
-            [ $jsonDoc->foo->{'/'}, '/foo/~1', '~1' ],
-            [ $jsonDoc->foo->{'~~'}, '/foo/~0~0', '~0~0' ],
-            [ $jsonDoc->bar, '/bar', 'bar' ],
-            [ $jsonDoc->bar->baz, '/bar/baz', 'baz' ],
+            [ $jsonDoc->getRoot(), '/', null ],
+            [ $jsonDoc->getRoot()->foo, '/foo', 'foo' ],
+            [ $jsonDoc->getRoot()->foo->{'/'}, '/foo/~1', '~1' ],
+            [ $jsonDoc->getRoot()->foo->{'~~'}, '/foo/~0~0', '~0~0' ],
+            [ $jsonDoc->getRoot()->bar, '/bar', 'bar' ],
+            [ $jsonDoc->getRoot()->bar->baz, '/bar/baz', 'baz' ],
             [ $qux[5], '/bar/baz/qux/5', '5' ],
             [ $qux[5]->FOO, '/bar/baz/qux/5/FOO', 'FOO' ],
             [ $qux[5]->FOO->BAZ, '/bar/baz/qux/5/FOO/BAZ', 'BAZ' ],
@@ -171,11 +171,11 @@ class JsonNodeTest extends TestCase
         $jsonDoc =
             $factory->createFromJsonText(file_get_contents(self::FOO_FILENAME));
 
-        $this->assertEquals('#/', $jsonDoc->getUri());
+        $this->assertEquals('#/', $jsonDoc->getRoot()->getUri());
 
         $this->assertEquals(
             '#/bar/baz/qux',
-            $jsonDoc->bar->baz->getUri('qux')
+            $jsonDoc->getRoot()->bar->baz->getUri('qux')
         );
     }
 
@@ -187,43 +187,46 @@ class JsonNodeTest extends TestCase
             (new FileUriFactory())->create(self::FOO_FILENAME)
         );
 
-        $bar2 = $jsonDoc->bar->createDeepCopy();
+        $bar2 = $jsonDoc->getRoot()->bar->createDeepCopy();
 
-        $this->assertEquals(json_encode($jsonDoc->bar), json_encode($bar2));
-        $this->assertNotSame($jsonDoc->bar, $bar2);
+        $this->assertEquals(json_encode($jsonDoc->getRoot()->bar), json_encode($bar2));
+        $this->assertNotSame($jsonDoc->getRoot()->bar, $bar2);
 
         $this->assertEquals(
-            json_encode($jsonDoc->bar->baz->qux[5]),
+            json_encode($jsonDoc->getRoot()->bar->baz->qux[5]),
             json_encode($bar2->baz->qux[5])
         );
-        $this->assertNotSame($jsonDoc->bar->baz->qux[5], $bar2->baz->qux[5]);
+        $this->assertNotSame($jsonDoc->getRoot()->bar->baz->qux[5], $bar2->baz->qux[5]);
 
         $bar2->baz->qux[0] = 2;
         $this->assertSame(2, $bar2->baz->qux[0]);
-        $this->assertSame(1, $jsonDoc->bar->baz->qux[0]);
+        $this->assertSame(1, $jsonDoc->getRoot()->bar->baz->qux[0]);
 
         $bar2->baz->corge = 'Lorem ipsum';
         $this->assertSame('Lorem ipsum', $bar2->baz->corge);
-        $this->assertFalse(isset($jsonDoc->bar->baz->corge));
+        $this->assertFalse(isset($jsonDoc->getRoot()->bar->baz->corge));
 
-        $jsonDoc2 = $jsonDoc->createDeepCopy();
+        $jsonDoc2 = clone $jsonDoc;
 
         self::checkStructure($jsonDoc2);
 
         $this->assertEquals(
-            json_encode($jsonDoc->bar),
-            json_encode($jsonDoc2->bar)
+            json_encode($jsonDoc->getRoot()->bar),
+            json_encode($jsonDoc2->getRoot()->bar)
         );
-        $this->assertNotSame($jsonDoc->bar, $jsonDoc2->bar);
-
         $this->assertNotSame(
-            $jsonDoc->bar->baz->qux[5],
-            $jsonDoc2->bar->baz->qux[5]
+            $jsonDoc->getRoot()->bar,
+            $jsonDoc2->getRoot()->bar
         );
 
         $this->assertNotSame(
-            $jsonDoc->bar->baz->qux[6][0][2],
-            $jsonDoc2->bar->baz->qux[6][0][2]
+            $jsonDoc->getRoot()->bar->baz->qux[5],
+            $jsonDoc2->getRoot()->bar->baz->qux[5]
+        );
+
+        $this->assertNotSame(
+            $jsonDoc->getRoot()->bar->baz->qux[6][0][2],
+            $jsonDoc2->getRoot()->bar->baz->qux[6][0][2]
         );
     }
 
@@ -239,29 +242,29 @@ class JsonNodeTest extends TestCase
             (new FileUriFactory())->create(self::FOO_FILENAME)
         );
 
-        $jsonDoc->bar->foo = $jsonDoc->importObjectNode(
-            $jsonDoc2->foo,
+        $jsonDoc->getRoot()->bar->foo = $jsonDoc->getRoot()->importObjectNode(
+            $jsonDoc2->getRoot()->foo,
             JsonPtr::newFromString('/bar/foo'),
             null,
-            $jsonDoc->bar
+            $jsonDoc->getRoot()->bar
         );
 
         self::checkStructure($jsonDoc);
 
-        $jsonDoc->bar->baz->qux[2] =
-            $jsonDoc->importObjectNode(
-                $jsonDoc2->foo->{'~~'},
+        $jsonDoc->getRoot()->bar->baz->qux[2] =
+            $jsonDoc->getRoot()->importObjectNode(
+                $jsonDoc2->getRoot()->foo->{'~~'},
                 JsonPtr::newFromString('/bar/baz/qux/2'),
                 JsonNode::COPY_UPON_IMPORT
             );
 
         self::checkStructure($jsonDoc);
 
-        $this->assertSame((string)$jsonDoc->foo, (string)$jsonDoc->bar->foo);
+        $this->assertSame((string)$jsonDoc->getRoot()->foo, (string)$jsonDoc->getRoot()->bar->foo);
 
         $this->assertSame(
-            (string)$jsonDoc->bar->baz->qux[2],
-            (string)$jsonDoc2->foo->{'~~'}
+            (string)$jsonDoc->getRoot()->bar->baz->qux[2],
+            (string)$jsonDoc2->getRoot()->foo->{'~~'}
         );
     }
 
@@ -273,31 +276,31 @@ class JsonNodeTest extends TestCase
             (new FileUriFactory())->create(self::FOO_FILENAME)
         );
 
-        $jsonDoc2 = $jsonDoc->createDeepCopy();
+        $jsonDoc2 = clone $jsonDoc;
 
         $this->assertNotSame(
-            $jsonDoc->bar->baz->qux[6][0][2],
-            $jsonDoc2->bar->baz->qux[6][0][2]
+            $jsonDoc->getRoot()->bar->baz->qux[6][0][2],
+            $jsonDoc2->getRoot()->bar->baz->qux[6][0][2]
         );
 
-        $jsonDoc->foo = $jsonDoc->importArrayNode(
-            $jsonDoc2->bar->baz->qux[6],
+        $jsonDoc->getRoot()->foo = $jsonDoc->getRoot()->importArrayNode(
+            $jsonDoc2->getRoot()->bar->baz->qux[6],
             JsonPtr::newFromString('/foo')
         );
 
-        $jsonDoc->foo[0][1] = $jsonDoc->importArrayNode(
-            $jsonDoc2->bar->baz->qux[6][1],
+        $jsonDoc->getRoot()->foo[0][1] = $jsonDoc->getRoot()->importArrayNode(
+            $jsonDoc2->getRoot()->bar->baz->qux[6][1],
             JsonPtr::newFromString('/foo/0/1'),
             JsonNode::COPY_UPON_IMPORT
         );
 
         self::checkStructure($jsonDoc);
 
-        $this->assertSame(43, $jsonDoc->foo[0][0]);
+        $this->assertSame(43, $jsonDoc->getRoot()->foo[0][0]);
 
         $this->assertSame(
-            json_encode($jsonDoc->bar->baz->qux[6][1]),
-            json_encode($jsonDoc->foo[0][1])
+            json_encode($jsonDoc->getRoot()->bar->baz->qux[6][1]),
+            json_encode($jsonDoc->getRoot()->foo[0][1])
         );
     }
 
@@ -311,10 +314,12 @@ class JsonNodeTest extends TestCase
 
         // rebase due to change in base URI
 
-        $jsonDoc2 = new FooDocument((object)[]);
+        $jsonDoc2 = new FooDocument();
 
-        $node2a = $jsonDoc2->importObjectNode(
-            $jsonDoc->createDeepCopy(),
+        $jsonDoc2->setRoot(new JsonNode((object)[], $jsonDoc2, new JsonPtr()));
+
+        $node2a = $jsonDoc2->getRoot()->importObjectNode(
+            $jsonDoc->getRoot()->createDeepCopy(),
             JsonPtr::newFromString('/test')
         );
 
@@ -327,8 +332,8 @@ class JsonNodeTest extends TestCase
             $node2a->bar->baz->qux[6][0][2]->oldBaseQuux
         );
 
-        $node2b = $jsonDoc2->importObjectNode(
-            $jsonDoc->createDeepCopy(),
+        $node2b = $jsonDoc2->getRoot()->importObjectNode(
+            $jsonDoc->getRoot()->createDeepCopy(),
             JsonPtr::newFromString('/test'),
             JsonNode::COPY_UPON_IMPORT
         );
@@ -339,10 +344,10 @@ class JsonNodeTest extends TestCase
 
         // no rebase because base URI does not change
 
-        $jsonDoc3 = $jsonDoc->createDeepCopy();
+        $jsonDoc3 = clone $jsonDoc;
 
-        $node3a = $jsonDoc3->importObjectNode(
-            $jsonDoc->createDeepCopy(),
+        $node3a = $jsonDoc3->getRoot()->importObjectNode(
+            $jsonDoc->getRoot()->createDeepCopy(),
             JsonPtr::newFromString('/test')
         );
 
@@ -352,8 +357,8 @@ class JsonNodeTest extends TestCase
 
         $this->assertFalse(isset($node3a->bar->baz->qux[6][0][2]->oldBaseQuux));
 
-        $node3b = $jsonDoc3->importObjectNode(
-            $jsonDoc->createDeepCopy(),
+        $node3b = $jsonDoc3->getRoot()->importObjectNode(
+            $jsonDoc->getRoot()->createDeepCopy(),
             JsonPtr::newFromString('/test'),
             JsonNode::COPY_UPON_IMPORT
         );

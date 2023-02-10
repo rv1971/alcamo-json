@@ -11,12 +11,12 @@ use Psr\Http\Message\UriInterface;
  */
 class JsonDocumentFactory
 {
-    /// Class to use to create a document
+    /// Default class to use to create a document
     public const DOCUMENT_CLASS = JsonDocument::class;
 
     private $documentClass_; ///< string
-    private $depth_; ///< int
-    private $flags_; ///< int
+    private $depth_;         ///< int
+    private $flags_;         ///< int
 
     public function __construct(
         ?string $documentClass = null,
@@ -43,7 +43,7 @@ class JsonDocumentFactory
         string $jsonText,
         ?UriInterface $baseUri = null,
         ?string $documentClass = null
-    ): JsonNode {
+    ): JsonDocument {
         if (!isset($documentClass)) {
             $documentClass = $this->documentClass_;
         }
@@ -53,8 +53,19 @@ class JsonDocumentFactory
         }
 
         try {
-            return
-                new $documentClass($this->decodeJson($jsonText), $baseUri);
+            $document = new $documentClass(null, $baseUri);
+
+            $jsonPtr = new JsonPtr();
+
+            $jsonData = $this->decodeJson($jsonText);
+
+            $nodeClass = $document->getNodeClassToUse($jsonPtr, $jsonData);
+
+            $document->setRoot(
+                new $nodeClass($jsonData, $document, $jsonPtr)
+            );
+
+            return $document;
         } catch (\Throwable $e) {
             if ($e instanceof ExceptionInterface) {
                 if (isset($e->getMessageContext()['atUri'])) {

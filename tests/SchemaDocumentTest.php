@@ -16,52 +16,52 @@ class SchemaDocumentTest extends TestCase
 
         $this->assertInstanceOf(
             SchemaMapNode::class,
-            $schemaDoc->properties
+            $schemaDoc->getRoot()->properties
         );
 
         $this->assertInstanceOf(
             JsonReferenceNode::class,
-            $schemaDoc->properties->foo
+            $schemaDoc->getRoot()->properties->foo
         );
 
         $this->assertInstanceOf(
             SchemaMapNode::class,
-            $schemaDoc->{'$defs'}
+            $schemaDoc->getRoot()->{'$defs'}
         );
 
         $this->assertInstanceOf(
             SchemaNode::class,
-            $schemaDoc->{'$defs'}->Foo
+            $schemaDoc->getRoot()->{'$defs'}->Foo
         );
 
         $this->assertInstanceOf(
             JsonReferenceNode::class,
-            $schemaDoc->{'$defs'}->Foo->anyOf[0]
+            $schemaDoc->getRoot()->{'$defs'}->Foo->anyOf[0]
         );
 
         $this->assertInstanceOf(
             SchemaNode::class,
-            $schemaDoc->{'$defs'}->Foo->anyOf[2]
+            $schemaDoc->getRoot()->{'$defs'}->Foo->anyOf[2]
         );
 
         $this->assertInstanceOf(
             SchemaNode::class,
-            $schemaDoc->{'$defs'}->Bar
+            $schemaDoc->getRoot()->{'$defs'}->Bar
         );
 
         $this->assertInstanceOf(
             SchemaMapNode::class,
-            $schemaDoc->{'$defs'}->Bar->properties
+            $schemaDoc->getRoot()->{'$defs'}->Bar->properties
         );
 
         $this->assertInstanceOf(
             SchemaNode::class,
-            $schemaDoc->{'$defs'}->Bar->properties->bar
+            $schemaDoc->getRoot()->{'$defs'}->Bar->properties->bar
         );
 
         $this->assertInstanceOf(
             SchemaNode::class,
-            $schemaDoc->{'$defs'}->Baz->items
+            $schemaDoc->getRoot()->{'$defs'}->Baz->items
         );
     }
 }

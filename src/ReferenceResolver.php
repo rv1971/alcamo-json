@@ -113,8 +113,12 @@ class ReferenceResolver
          * references inside it. So it must first be created as a standalone
          * document and later be imported. */
 
-        return $node->getOwnerDocument()->getDocumentFactory()
+        $loadedObject = $node->getOwnerDocument()->getDocumentFactory()
             ->createFromUrl($node->resolveUri($node->{'$ref'}));
+
+        return $loadedObject instanceof JsonDocument
+            ? $loadedObject->getRoot()
+            : $loadedObject;
     }
 
     private function resolveRecursively(
@@ -175,8 +179,7 @@ class ReferenceResolver
             if ($history->contains([ $jsonPtrString, $ref ])) {
                 throw (new Recursion())->setMessageContext(
                     [
-                        'atUri' =>
-                        "{$node->getOwnerDocument()->getUri()}#$jsonPtr",
+                        'atUri' => (string)$node->getUri(),
                         'extraMessage' =>
                         "attempting to resolve \"$ref\" at \"$jsonPtr\" "
                         . "for the second time"

@@ -5,7 +5,7 @@ namespace alcamo\json;
 /**
  * @brief Document that represents a JSON schema
  */
-class SchemaDocument extends SchemaNode implements JsonDocumentInterface
+class SchemaDocument extends TypedNodeDocument
 {
-    use TypedNodeDocumentTrait;
+    public const NODE_CLASS = SchemaNode::class;
 }

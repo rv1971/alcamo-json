@@ -19,7 +19,7 @@ class JsonDocumentFactoryTest extends TestCase
 
         $this->assertInstanceOf(JsonDocument::class, $jsonDoc);
 
-        $this->assertSame(17, $jsonDoc->foo->{'~~'}->{'/~'}[5]);
+        $this->assertSame(17, $jsonDoc->getRoot()->foo->{'~~'}->{'/~'}[5]);
 
         $jsonDoc2 = $factory->createFromUrl(
             'file://'
@@ -39,7 +39,7 @@ class JsonDocumentFactoryTest extends TestCase
 
         $jsonDoc3 = $factory2->createFromJsonText("{\"foo\": $bigint}");
 
-        $this->assertSame($bigint, $jsonDoc3->foo);
+        $this->assertSame($bigint, $jsonDoc3->getRoot()->foo);
     }
 
     public function testException()

@@ -68,22 +68,22 @@ class Json2Dom
         return $this->flags_;
     }
 
-    public function convert(JsonNode $jsonNode): \DOMDocument
+    public function convert(JsonDocument $jsonDocument): \DOMDocument
     {
         $domDocument = $this->createDocumentRoot();
 
         $this->appendJsonNode(
             $domDocument,
-            $jsonNode,
+            $jsonDocument->getRoot(),
             static::STRUCTURE_NS,
             's:' . static::DOCUMENT_LOCAL_NAME
         );
 
-        if ($jsonNode->getOwnerDocument()->getBaseUri() !== null) {
+        if ($jsonDocument->getBaseUri() !== null) {
             $domDocument->documentElement->setAttributeNS(
                 self::XML_NS,
                 'xml:base',
-                $jsonNode->getOwnerDocument()->getBaseUri()
+                $jsonDocument->getBaseUri()
             );
         }
 

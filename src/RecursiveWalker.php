@@ -26,6 +26,8 @@ class RecursiveWalker implements \Iterator
     {
         if (is_array($startNode)) {
             $this->startNode_ = new ReferenceContainer($startNode);
+        } elseif ($startNode instanceof JsonDocument) {
+            $this->startNode_ =& $startNode->getRoot();
         } else {
             $this->startNode_ =& $startNode;
         }

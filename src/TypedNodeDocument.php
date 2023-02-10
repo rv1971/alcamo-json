@@ -31,10 +31,8 @@ use alcamo\exception\{InvalidEnumerator, ProgramFlowException};
  * current class, which may be a child class of the class that defines
  * the class map.
  */
-trait TypedNodeDocumentTrait
+class TypedNodeDocument extends JsonDocument
 {
-    use JsonDocumentTrait;
-
     /// Class to use for $value at the position $jsonPtr
     public function getNodeClassToUse(JsonPtr $jsonPtr, object $value): string
     {
@@ -45,7 +43,7 @@ trait TypedNodeDocumentTrait
             return JsonReferenceNode::class;
         }
 
-        $class = static::class;
+        $class = static::NODE_CLASS;
 
         foreach ($jsonPtr as $segment) {
             if (!isset($map)) {
@@ -58,7 +56,7 @@ trait TypedNodeDocumentTrait
                         "No CLASS_MAP in {class}",
                         0,
                         null,
-                        [ 'atUri' => $this->getUri(), 'class' => $class ]
+                        [ 'atUri' => $this->getBaseUri(), 'class' => $class ]
                     );
                 }
             }

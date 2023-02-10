@@ -4,10 +4,13 @@ namespace alcamo\json;
 
 use Psr\Http\Message\UriInterface;
 
-class FooDocument extends JsonNode implements JsonDocumentInterface
+class FooDocument extends TypedNodeDocument
 {
-    use TypedNodeDocumentTrait;
+    public const NODE_CLASS = FooRootNode::class;
+}
 
+class FooRootNode extends JsonNode
+{
     public const CLASS_MAP = [
         'foo' => FooNode::class,
         'bar' => BarNode::class,

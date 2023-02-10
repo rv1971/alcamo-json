@@ -184,62 +184,71 @@ class ReferenceResolverTest extends TestCase
 
         self::checkStructure($jsonDoc);
 
-        $jsonDoc2 = $jsonDoc->createDeepCopy();
+        $jsonDoc2 = clone $jsonDoc;
 
         self::checkStructure($jsonDoc2);
 
-        $this->assertEquals($jsonDoc, $jsonDoc2);
+        $this->assertEquals(
+            (string)$jsonDoc->getRoot(),
+            (string)$jsonDoc2->getRoot()
+        );
 
         // does nothing, bar.json has no external references
-        $jsonDoc2 =
-            $jsonDoc2->resolveReferences(ReferenceResolver::RESOLVE_EXTERNAL);
+        $jsonDoc2->resolveReferences(ReferenceResolver::RESOLVE_EXTERNAL);
 
         self::checkStructure($jsonDoc2);
 
-        $jsonDoc->getDocumentFactory();
-        $jsonDoc2->getDocumentFactory();
-        $this->assertEquals($jsonDoc, $jsonDoc2);
+        $this->assertEquals(
+            (string)$jsonDoc->getRoot(),
+            (string)$jsonDoc2->getRoot()
+        );
 
-        $jsonDoc2 = $jsonDoc2->resolveReferences();
+        $jsonDoc2->resolveReferences();
 
         self::checkStructure($jsonDoc2);
 
         $this->assertNotEquals($jsonDoc, $jsonDoc2);
 
         // check that all references have been replaced.
-        $this->assertSame(false, strpos($jsonDoc2, '$ref'));
+        $this->assertSame(false, strpos($jsonDoc2->getRoot(), '$ref'));
 
-        $this->assertSame('Lorem ipsum', $jsonDoc2->bar->foo);
+        $this->assertSame('Lorem ipsum', $jsonDoc2->getRoot()->bar->foo);
 
-        $this->assertSame(42, $jsonDoc2->bar->bar[0]);
+        $this->assertSame(42, $jsonDoc2->getRoot()->bar->bar[0]);
 
         $this->assertSame(
-            (string)$jsonDoc2->defs->baz,
-            (string)$jsonDoc2->bar->bar[1]
+            (string)$jsonDoc2->getRoot()->defs->baz,
+            (string)$jsonDoc2->getRoot()->bar->bar[1]
         );
 
-        $this->assertSame(true, $jsonDoc2->bar->bar[1]->qux2);
+        $this->assertSame(true, $jsonDoc2->getRoot()->bar->bar[1]->qux2);
 
-        $this->assertSame($jsonDoc2->defs->qux, $jsonDoc2->bar->bar[2]);
+        $this->assertSame(
+            $jsonDoc2->getRoot()->defs->qux,
+            $jsonDoc2->getRoot()->bar->bar[2]
+        );
 
-        $this->assertSame(true, $jsonDoc2->defs->baz->qux2);
+        $this->assertSame(true, $jsonDoc2->getRoot()->defs->baz->qux2);
 
         $this->assertSame(
             [ "Lorem", "ipsum", true, 43, false, null ],
-            $jsonDoc2->bar->bar[2]
+            $jsonDoc2->getRoot()->bar->bar[2]
         );
 
-        $this->assertSame(null, $jsonDoc2->bar->bar[3]);
+        $this->assertSame(null, $jsonDoc2->getRoot()->bar->bar[3]);
 
         // replace refs only in part of the document
 
-        $jsonDoc3 = $jsonDoc->createDeepCopy();
+        $jsonDoc3 = clone $jsonDoc;
 
-        $jsonDoc3->bar->bar[3]->resolveReferences();
+        $jsonDoc3->getRoot()->bar->bar[3]->resolveReferences();
 
-        $this->assertSame(null, $jsonDoc3->bar->bar[3]);
+        $this->assertSame(null, $jsonDoc3->getRoot()->bar->bar[3]);
 
-        $this->assertSame('#/defs/qux/5', $jsonDoc3->defs->quux->{'$ref'});
+        $this->assertSame(
+            '#/defs/qux/5',
+            $jsonDoc3->getRoot()->defs->quux->{'$ref'}
+        );
     }
 
     // replace a document node by another document node
@@ -254,34 +263,36 @@ class ReferenceResolverTest extends TestCase
 
         self::checkStructure($jsonDoc);
 
-        $jsonDoc2 = $jsonDoc->createDeepCopy();
+        $jsonDoc2 = clone $jsonDoc;
 
-        $this->assertEquals($jsonDoc, $jsonDoc2);
+        $this->assertEquals(
+            (string)$jsonDoc->getRoot(),
+            (string)$jsonDoc2->getRoot()
+        );
 
-        $jsonDoc2 =
-            $jsonDoc2->resolveReferences(ReferenceResolver::RESOLVE_INTERNAL);
+        $jsonDoc2->resolveReferences(ReferenceResolver::RESOLVE_INTERNAL);
 
         self::checkStructure($jsonDoc2);
 
-        $jsonDoc->getDocumentFactory();
-        $jsonDoc2->getDocumentFactory();
-        $this->assertEquals($jsonDoc, $jsonDoc2);
+        $this->assertEquals(
+            (string)$jsonDoc->getRoot(),
+            (string)$jsonDoc2->getRoot()
+        );
 
-        $jsonDoc2 =
-            $jsonDoc2->resolveReferences(ReferenceResolver::RESOLVE_EXTERNAL);
+        $jsonDoc2->resolveReferences(ReferenceResolver::RESOLVE_EXTERNAL);
 
         $this->assertNotEquals($jsonDoc, $jsonDoc2);
 
-        $this->assertFalse(isset($jsonDoc2->foo->{'$ref'}));
+        $this->assertFalse(isset($jsonDoc2->getRoot()->foo->{'$ref'}));
 
-        $jsonDoc2 = $jsonDoc2->resolveReferences();
+        $jsonDoc2->resolveReferences();
 
         $this->assertNotEquals($jsonDoc, $jsonDoc2);
 
         // check that all references have been replaced
-        $this->assertSame(false, strpos($jsonDoc2, '$ref'));
+        $this->assertSame(false, strpos($jsonDoc2->getRoot(), '$ref'));
 
-        $this->assertSame('Lorem ipsum', $jsonDoc2->foo);
+        $this->assertSame('Lorem ipsum', $jsonDoc2->getRoot()->foo);
     }
 
     // other internal/external replacements
@@ -296,48 +307,50 @@ class ReferenceResolverTest extends TestCase
 
         self::checkStructure($jsonDoc);
 
-        $jsonDoc2 = $jsonDoc->createDeepCopy();
+        $jsonDoc2 = clone $jsonDoc;
 
-        $jsonDoc2 = $jsonDoc2->resolveReferences();
+        $jsonDoc2->resolveReferences();
 
         $this->assertNotEquals($jsonDoc, $jsonDoc2);
 
         // check that all references have been replaced
-        $this->assertSame(false, strpos($jsonDoc2, '$ref'));
+        $this->assertSame(false, strpos($jsonDoc2->getRoot(), '$ref'));
 
         // replace node by external node, which has been resolved internally
-        $this->assertSame('Lorem ipsum', $jsonDoc2->foo);
+        $this->assertSame('Lorem ipsum', $jsonDoc2->getRoot()->foo);
 
         // replace node by external node, which has been resolved internally
         // to an array
-        $this->assertSame(42, $jsonDoc2->bar[0]);
-        $this->assertSame(true, $jsonDoc2->bar[1]->qux2);
+        $this->assertSame(42, $jsonDoc2->getRoot()->bar[0]);
+        $this->assertSame(true, $jsonDoc2->getRoot()->bar[1]->qux2);
 
         // replacement via multiple files
-        $this->assertSame(null, $jsonDoc2->quux);
+        $this->assertSame(null, $jsonDoc2->getRoot()->quux);
 
-        $this->assertSame($jsonDoc->getBaseUri(), $jsonDoc2->getBaseUri());
+        $this->assertNotSame($jsonDoc->getBaseUri(), $jsonDoc2->getBaseUri());
+
+        $this->assertEquals($jsonDoc->getBaseUri(), $jsonDoc2->getBaseUri());
 
         // node URI is computed from document URI
         $this->assertEquals(
             "$quxUri#/bar/1",
-            $jsonDoc2->bar[1]->getUri()
+            $jsonDoc2->getRoot()->bar[1]->getUri()
         );
 
         // check that key "0200" in quux.json is correctly preserved
         $this->assertSame(
             'data with weird key',
-            $jsonDoc2->corge->{'200'}
+            $jsonDoc2->getRoot()->corge->{'200'}
         );
 
         $this->assertSame(
             'data with very weird key',
-            $jsonDoc2->corge->{'0200'}
+            $jsonDoc2->getRoot()->corge->{'0200'}
         );
 
         $this->assertSame(
             'data with extremely weird key',
-            $jsonDoc2->corge->{'00200'}
+            $jsonDoc2->getRoot()->corge->{'00200'}
         );
     }
 
@@ -407,17 +420,17 @@ class ReferenceResolverTest extends TestCase
 
         $this->assertSame(
             'bar.json#/defs/foo',
-            $jsonDoc->x->{'$ref'}
+            $jsonDoc->getRoot()->x->{'$ref'}
         );
 
         $this->assertSame(
             'http://www.example.org#bar',
-            $jsonDoc->y->{'$ref'}
+            $jsonDoc->getRoot()->y->{'$ref'}
         );
 
         $this->assertSame(
             "Resolved from bar.json#/defs/baz",
-            $jsonDoc->z->comment
+            $jsonDoc->getRoot()->z->comment
         );
     }
 }
