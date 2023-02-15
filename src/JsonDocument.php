@@ -16,12 +16,20 @@ class JsonDocument
     private $baseUri_;         ///< ?UriInterface
     private $documentFactory_; ///< JsonDocumentFactory
 
+    /**
+     * Calls setRoot() if $root is not `null`, so that derived classes which
+     * need to run some initialization code depending $root may simply
+     * redefine setRoot().
+     */
     public function __construct(
         ?JsonNode $root = null,
         ?UriInterface $baseUri = null
     ) {
-        $this->root_ = $root;
         $this->baseUri_ = $baseUri;
+
+        if (isset($root)) {
+            $this->setRoot($root);
+        }
     }
 
     public function __clone()
