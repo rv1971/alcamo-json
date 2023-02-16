@@ -4,9 +4,7 @@ namespace alcamo\json;
 
 use Psr\Http\Message\UriInterface;
 
-/**
- * @brief JSON reference objects
- */
+/// JSON reference objects
 class JsonReferenceNode extends JsonNode
 {
     public static function newFromUri(

@@ -176,7 +176,12 @@ class JsonDocument
     /// Get class that should be used to create a node
     public function getNodeClassToUse(JsonPtr $jsonPtr, object $value): string
     {
-        return static::NODE_CLASS;
+        /** Return JsonReference for any reference nodes, otehrwise @ref
+         *  NODE_CLASS. A node is considered a reference node iff is has a
+         *  `$ref` property with a string value. */
+        return isset($value->{'$ref'}) && is_string($value->{'$ref'})
+            ? JsonReferenceNode::class
+            : static::NODE_CLASS;
     }
 
     /**

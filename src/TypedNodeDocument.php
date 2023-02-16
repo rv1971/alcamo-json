@@ -37,7 +37,7 @@ class TypedNodeDocument extends JsonDocument
     public function getNodeClassToUse(JsonPtr $jsonPtr, object $value): string
     {
         /** Return JsonReference for any reference nodes. A node is considered
-         *  a refernce node iff is has a `$ref` property with a string
+         *  a reference node iff is has a `$ref` property with a string
          *  value. */
         if (isset($value->{'$ref'}) && is_string($value->{'$ref'})) {
             return JsonReferenceNode::class;
