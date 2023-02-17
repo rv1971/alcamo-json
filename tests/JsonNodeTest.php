@@ -2,7 +2,6 @@
 
 namespace alcamo\json;
 
-use alcamo\exception\{DataValidationFailed, Recursion};
 use alcamo\uri\FileUriFactory;
 use PHPUnit\Framework\TestCase;
 
