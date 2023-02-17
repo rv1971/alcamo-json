@@ -2,14 +2,12 @@
 
 namespace alcamo\json;
 
-use alcamo\exception\SyntaxError;
-
 /**
- * @brief Convert a JSON structure to a generc DOM tree
+ * @brief Convert a JSON structure to a generic DOM tree
  *
  * - Properties whose value are JSON objects are converted to DOM elements
  *   whose namespace is @ref OBJECT_NS and whose local name is the name of the
- *   JSON property converted by jsonProp2localName().
+ *   JSON property converted by jsonProp2LocalName().
  * - In properties whose value are arrays:
  *   - Sub-objects are converted to <s:item> elements where s resolves to the
  *     @ref STRUCTURE_NS namespace.
@@ -17,25 +15,26 @@ use alcamo\exception\SyntaxError;
  *   - Sub-arrays are converted accordingly.
  * - All other properties are converted to attributes without namespace whose
  *   local name is the name of the JSON property converted by
- *   jsonProp2localName().
+ *   jsonProp2LocalName().
  *
- * When a tag name created by jsonProp2localName() differs from the property,
- * the element also has an attribute `name`taht tells the original property.
+ * When a tag name created by jsonProp2LocalName() differs from the property,
+ * the element also has an attribute `name` that tells the original property.
  *
- * @warning The result does not distinguish between empty arrays and empyt
+ * @warning The result does not distinguish between empty arrays and empty
  * objects.
  *
  * Among others, this can be used to generate an HTML representation of a JSON
- * object by converting it to XML and applying an XSLT stylesheet.
+ * object by converting it to XML and then applying an XSLT stylesheet.
  */
 class Json2Dom
 {
     public const XML_NS = 'http://www.w3.org/XML/1998/namespace';
 
     /// Namespace for DOM elements that represent a JSON object
-    public const OBJECT_NS = 'tag:rv1971@web.de,2021:alcamo-json:j2d/object';
+    public const OBJECT_NS =
+        'tag:rv1971@web.de,2021:alcamo-json:j2d/object';
 
-    /// Namespace for DOM elements that needed for structures, e.g. arrays
+    /// Namespace for DOM elements needed for structures, e.g. arrays
     public const STRUCTURE_NS =
         'tag:rv1971@web.de,2021:alcamo-json:j2d/structure';
 
@@ -113,7 +112,7 @@ class Json2Dom
         }
 
         foreach ($jsonNode as $prop => $value) {
-            $localName = $this->jsonProp2localName($prop);
+            $localName = $this->jsonProp2LocalName($prop);
 
             $origName = ($localName != $prop) ? $prop : null;
 
@@ -230,7 +229,7 @@ class Json2Dom
      * allowed in an XML [Name](https://www.w3.org/TR/REC-xml/#NT-Name) or its
      * first character will result in invalid DOM documents.
      */
-    public function jsonProp2localName(string $jsonProp): string
+    public function jsonProp2LocalName(string $jsonProp): string
     {
         /**- Convert a space to an underscore, a slash to a dot and any other
          * special ASCII character to a hyphen. */
@@ -252,9 +251,9 @@ class Json2Dom
     /// Convert a JSON pointer to a xml:id attribute
     public function jsonPtr2XmlId(JsonPtr $jsonPtr): string
     {
-        /** Apply jsonProp2localName() to whatever follows the initial
+        /** Apply jsonProp2LocalName() to whatever follows the initial
          *  slash. */
-        return $this->jsonProp2localName(substr($jsonPtr, 1));
+        return $this->jsonProp2LocalName(substr($jsonPtr, 1));
     }
 
     protected function createDocumentRoot(): \DOMDocument
@@ -264,9 +263,9 @@ class Json2Dom
         /* Loading a DOM tree from XML is the only known method to add the
          * default namespace to the document element. */
         $domDocument->loadXML(
-            '<?xml version="1.0"?><s:document xmlns="'
-            . static::OBJECT_NS . '" xmlns:s="'
-            . static::STRUCTURE_NS . '"/>'
+            '<?xml version="1.0"?><s:document '
+            . 'xmlns="' . static::OBJECT_NS . '" '
+            . 'xmlns:s="' . static::STRUCTURE_NS . '"/>'
         );
 
         return $domDocument;

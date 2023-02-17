@@ -2,15 +2,15 @@
 
 namespace alcamo\json;
 
-/**
- * @brief Depth-first iterator for a JSON (sub)tree
- */
+use alcamo\exception\Closed;
+
+/// Depth-first iterator for a JSON (sub)tree
 class RecursiveWalker implements \Iterator
 {
     public const JSON_OBJECTS_ONLY = 1; ///< Only return JSON object nodes
     public const OMIT_START_NODE   = 2; ///< Do not return the start node itself
 
-    private $startNode_; ///< any type
+    private $startNode_; ///< JsonNode|ReferenceContainer
     private $flags_;     ///< int
 
     private $stack_;                ///< array
@@ -20,7 +20,7 @@ class RecursiveWalker implements \Iterator
     private $skipChildren_ = false; ///< bool
 
     private $currentKey_;  ///< AbstractJsonPtrFragment
-    private $currentNode_; ///< mixed
+    private $currentNode_; ///< any type
 
     public function __construct(&$startNode, ?int $flags = null)
     {
@@ -131,19 +131,23 @@ class RecursiveWalker implements \Iterator
      */
     public function replaceCurrent($value): void
     {
-        $nodeValue =
+        /**
+         * @throw alcamo::exception::Closed if iterator has already
+         * terminated.
+         */
+        if (!isset($this->currentNode_)) {
+            throw (new Closed())->setMessageContext(
+                [
+                    'objectType' => static::class,
+                    'object' => ''
+                ]
+            );
+        }
+
+        $this->currentNode_ =
             is_array($value) ? new ReferenceContainer($value) : $value;
 
-        if ($this->startNode_ instanceof JsonNode) {
-            if ($this->currentNode_ === $this->startNode_) {
-                $this->currentKey_ = $value instanceof JsonNnode
-                    ? new JsonPtr()
-                    : new JsonPtrSegments();
-                $this->startNode_ = $value;
-                $this->currentNode_ = $nodeValue;
-                return;
-            }
-        } elseif ($this->currentKey_->isEmpty()) {
+        if ($this->currentKey_->isEmpty()) {
             if ($this->startNode_ instanceof ReferenceContainer) {
                 $this->startNode_->value = $value;
             }
@@ -152,20 +156,16 @@ class RecursiveWalker implements \Iterator
                 ? new JsonPtr()
                 : new JsonPtrSegments();
 
-            $this->startNode_ =  $nodeValue;
-            $this->currentNode_ = $nodeValue;
-            return;
-        }
-
-        $key = $this->currentGenerator_->key();
-
-        if ($this->currentParent_ instanceof JsonNode) {
-            $this->currentParent_->$key = $value;
+            $this->startNode_ = $this->currentNode_;
         } else {
-            $this->currentParent_->value[$key] = $value;
-        }
+            $key = $this->currentGenerator_->key();
 
-        $this->currentNode_ = $nodeValue;
+            if ($this->currentParent_ instanceof JsonNode) {
+                $this->currentParent_->$key = $value;
+            } else {
+                $this->currentParent_->value[$key] = $value;
+            }
+        }
     }
 
     /// next() implementation proceeding to the next node, if any
@@ -185,6 +185,7 @@ class RecursiveWalker implements \Iterator
                 $generator = $this->iterateArray($this->currentNode_->value);
                 break;
 
+                /* $this->currentNode_ is null */
             default:
                 $generator = null;
         }
@@ -217,10 +218,11 @@ class RecursiveWalker implements \Iterator
             // exit iteration if no more siblings on any level
             if (!$this->currentGenerator_->valid()) {
                 // ensure that replaceCurrent() fails
-                $this->currentParent_ = null;
 
+                $this->currentParent_ = null;
                 $this->currentKey_ = null;
                 $this->currentNode_ = null;
+
                 return;
             }
         }

@@ -31,6 +31,12 @@ class Json2DomCli extends AbstractCli
         ]
     ];
 
+    public const OPTIONS_MAP = [
+        'with-always-name-attrs' => Json2Dom::ALWAYS_NAME_ATTRS,
+        'with-json-ptr'          => Json2Dom::JSON_PTR_ATTRS,
+        'with-xml-id'            => Json2Dom::XML_ID_ATTRS
+    ];
+
     public function process($arguments = null)
     {
         parent::process($arguments);
@@ -40,16 +46,20 @@ class Json2DomCli extends AbstractCli
             exit;
         }
 
-        $options =
-            ($this->getOption('with-json-ptr') ? Json2Dom::JSON_PTR_ATTRS : 0)
-            | ($this->getOption('with-xml-id') ? Json2Dom::XML_ID_ATTRS : 0)
-            | ($this->getOption('with-always-name-attrs') ? Json2Dom::ALWAYS_NAME_ATTRS : 0);
+        $json2DomOptions = 0;
+
+        foreach (static::OPTIONS_MAP as $cliOption => $json2DomOption) {
+            if ($this->getOption($cliOption)) {
+                $json2DomOptions |= $json2DomOption;
+            }
+        }
 
         $jsonDocument = (new JsonDocumentFactory())->createFromUrl(
             $this->getOperand('jsonFilename')
         );
 
-        $domDocument = $this->createConverter($options)->convert($jsonDocument);
+        $domDocument = $this->createConverter($json2DomOptions)
+            ->convert($jsonDocument);
 
         $domDocument->formatOutput = true;
 
@@ -58,8 +68,8 @@ class Json2DomCli extends AbstractCli
         exit(0);
     }
 
-    public function createConverter(?int $options = null): Json2Dom
+    public function createConverter(?int $json2DomOptions = null): Json2Dom
     {
-        return new Json2Dom($options);
+        return new Json2Dom($json2DomOptions);
     }
 }

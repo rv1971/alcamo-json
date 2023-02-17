@@ -12,49 +12,44 @@ class JsonDocument
 {
     public const NODE_CLASS = JsonNode::class;
 
-    private $root_;            ///< ?JsonNode
+    private $root_;            ///< JsonNode, array or primitive type
     private $baseUri_;         ///< ?UriInterface
     private $documentFactory_; ///< JsonDocumentFactory
 
-    /**
-     * Calls setRoot() if $root is not `null`, so that derived classes which
-     * need to run some initialization code depending $root may simply
-     * redefine setRoot().
-     */
-    public function __construct(
-        ?JsonNode $root = null,
-        ?UriInterface $baseUri = null
-    ) {
+    public function __construct($jsonData, ?UriInterface $baseUri = null)
+    {
+        $this->root_ = $this->createNode($jsonData, new JsonPtr());
         $this->baseUri_ = $baseUri;
-
-        if (isset($root)) {
-            $this->setRoot($root);
-        }
     }
 
     public function __clone()
     {
-        $jsonPtr = new JsonPtr();
-
-        $this->root_ = (new JsonNode((object)[], $this, $jsonPtr))
-            ->importObjectNode(
+        if ($this->root_ instanceof JsonNode) {
+            $this->root_ = JsonNode::importObjectNode(
+                $this,
                 $this->root_,
-                $jsonPtr,
+                new JsonPtr(),
                 JsonNode::COPY_UPON_IMPORT
             );
+        } elseif (is_array($this->root_)) {
+            $this->root_ = JsonNode::importArrayNode(
+                $this,
+                $this->root_,
+                new JsonPtr(),
+                JsonNode::COPY_UPON_IMPORT
+            );
+        } /* else root is a primitive type */
 
-        $this->baseUri_ = isset($this->baseUri_) ? clone $this->baseUri_ : null;
+        if (isset($this->baseUri_)) {
+            $this->baseUri_ = clone $this->baseUri_;
+        }
+
         $this->documentFactory_ = null;
     }
 
-    public function &getRoot(): ?JsonNode
+    public function &getRoot():
     {
         return $this->root_;
-    }
-
-    public function setRoot(JsonNode $root): void
-    {
-        $this->root_ = $root;
     }
 
     /// Base URI, if specified
@@ -70,12 +65,6 @@ class JsonDocument
         }
 
         return $this->documentFactory_;
-    }
-
-    public function setDocumentFactory(
-        JsonDocumentFactory $documentFactory
-    ): void {
-        $this->documentFactory_ = $documentFactory;
     }
 
     /// Get JSON node identified by JSON pointer
@@ -174,8 +163,10 @@ class JsonDocument
     }
 
     /// Get class that should be used to create a node
-    public function getNodeClassToUse(JsonPtr $jsonPtr, object $value): string
-    {
+    public function getNodeClassToCreate(
+        JsonPtr $jsonPtr,
+        object $value
+    ): string {
         /** Return JsonReference for any reference nodes, otehrwise @ref
          *  NODE_CLASS. A node is considered a reference node iff is has a
          *  `$ref` property with a string value. */
@@ -186,12 +177,10 @@ class JsonDocument
 
     /**
      * @brief Create a node in a JSON tree
-     * - If $value is a nonempty numerically-indexed array, create an array.
-     * - Else, if $value is an object or associative array, call createNode()
+     * - If $value is an object, call getNodeClassToCreate() and __construct().
+     * - Else, if $value is an array, create an array, calling createNode()
      *   recursively.
      * - Else, use $value as-is.
-     *
-     * @sa [How to check if PHP array is associative or sequential?](https://stackoverflow.com/questions/173400/how-to-check-if-php-array-is-associative-or-sequential)
      */
     public function createNode(
         $value,
@@ -199,10 +188,12 @@ class JsonDocument
         ?JsonNode $parent = null
     ) {
         switch (true) {
-            case is_array($value)
-                && ($value == []
-                    || ((isset($value[0]) || array_key_exists(0, $value))
-                        && array_keys($value) === range(0, count($value) - 1))):
+            case is_object($value):
+                $class = $this->getNodeClassToCreate($jsonPtr, $value);
+
+                return new $class($value, $this, $jsonPtr, $parent);
+
+            case is_array($value):
                 $result = [];
 
                 foreach ($value as $prop => $subValue) {
@@ -213,11 +204,6 @@ class JsonDocument
                 }
 
                 return $result;
-
-            case is_object($value):
-                $class = $this->getNodeClassToUse($jsonPtr, $value);
-
-                return new $class($value, $this, $jsonPtr, $parent);
 
             default:
                 return $value;

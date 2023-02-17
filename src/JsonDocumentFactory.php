@@ -48,24 +48,12 @@ class JsonDocumentFactory
             $documentClass = $this->documentClass_;
         }
 
-        if (isset($baseUri) && !$baseUri instanceof UriInterface) {
+        if (isset($baseUri) && !($baseUri instanceof UriInterface)) {
             $baseUri = new Uri($baseUri);
         }
 
         try {
-            $document = new $documentClass(null, $baseUri);
-
-            $jsonPtr = new JsonPtr();
-
-            $jsonData = $this->decodeJson($jsonText);
-
-            $nodeClass = $document->getNodeClassToUse($jsonPtr, $jsonData);
-
-            $document->setRoot(
-                new $nodeClass($jsonData, $document, $jsonPtr)
-            );
-
-            return $document;
+            return new $documentClass($this->decodeJson($jsonText), $baseUri);
         } catch (\Throwable $e) {
             if ($e instanceof ExceptionInterface) {
                 if (isset($e->getMessageContext()['atUri'])) {

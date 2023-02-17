@@ -2,9 +2,7 @@
 
 namespace alcamo\json;
 
-/**
- * @brief Node that represents a JSON schema
- */
+/// Node that represents a JSON schema
 class SchemaNode extends JsonNode
 {
     public const CLASS_MAP = [

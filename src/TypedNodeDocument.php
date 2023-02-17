@@ -34,8 +34,10 @@ use alcamo\exception\{InvalidEnumerator, ProgramFlowException};
 class TypedNodeDocument extends JsonDocument
 {
     /// Class to use for $value at the position $jsonPtr
-    public function getNodeClassToUse(JsonPtr $jsonPtr, object $value): string
-    {
+    public function getNodeClassToCreate(
+        JsonPtr $jsonPtr,
+        object $value
+    ): string {
         /** Return JsonReference for any reference nodes. A node is considered
          *  a reference node iff is has a `$ref` property with a string
          *  value. */

@@ -36,12 +36,12 @@ class ReferenceResolver
         $this->flags_ = $flags;
     }
 
-    public function resolve(JsonNode $startNode)
+    public function resolve($startNode)
     {
         $result =
             $this->resolveRecursively($startNode, $this->flags_, new Set());
 
-        if ($result !== $startNode && !$startNode->getJsonPtr()->isRoot()) {
+        if ($startNode instanceof JsonNnode && $result !== $startNode) {
             $startNode->getOwnerDocument()
                 ->setNode($startNode->getJsonPtr(), $result);
         }
@@ -59,10 +59,10 @@ class ReferenceResolver
      * - @ref STOP_RECURSION
      * - @ref CONTINUE_RECURSION
      *
-     * This implementation calls JsonDocument::getNode() to create a new node
-     * (which may be a JsonNode object, an array or a primitive type), creates
-     * a deep copy of it if it is a JsonNode, and asks the caller to continue
-     * recursive resolution on the new node.
+     * This implementation calls JsonDocument::getNode() (which may be a
+     * JsonNode object, an array or a primitive type), creates a deep copy of
+     * it if it is a JsonNode, and asks the caller to continue recursive
+     * resolution on the new node.
      *
      * Child classes may override this to return a modified node
      * (e.g. containing information about its source), to leave the node
@@ -71,10 +71,11 @@ class ReferenceResolver
      * @warning When overriding this method to return a JsonNode from $node's
      * owner document, a deep copy must be created.
      */
-    protected function resolveInternalRef(JsonNode $node, ?int &$action)
-    {
-        $newNode = $node->getOwnerDocument()
-            ->getNode(JsonPtr::newFromString(substr($node->{'$ref'}, 1)));
+    protected function resolveInternalRef(
+        JsonReferenceNode $node,
+        ?int &$action
+    ) {
+        $newNode = $node->getTarget();
 
         if ($newNode instanceof JsonNode) {
             $newNode = $newNode->createDeepCopy();
@@ -104,17 +105,13 @@ class ReferenceResolver
      * (e.g. containing information about its source), to leave the node
      * unchanged, or to prevent further recursion on this node.
      */
-    protected function resolveExternalRef(JsonNode $node, ?int &$action)
-    {
+    protected function resolveExternalRef(
+        JsonReferenceNode $node,
+        ?int &$action
+    ) {
+        $loadedObject = $node->getTarget();
+
         $action = self::CONTINUE_RECURSION;
-
-        /* The new document must not be created in its final place in the
-         * existing document, because then it might be impossible to resolve
-         * references inside it. So it must first be created as a standalone
-         * document and later be imported. */
-
-        $loadedObject = $node->getOwnerDocument()->getDocumentFactory()
-            ->createFromUrl($node->resolveUri($node->{'$ref'}));
 
         return $loadedObject instanceof JsonDocument
             ? $loadedObject->getRoot()
@@ -122,37 +119,32 @@ class ReferenceResolver
     }
 
     private function resolveRecursively(
-        JsonNode $node,
+        $node,
         int $flags,
         Set $history
     ) {
+        $ownerDocument = $node->getOwnerDocument();
+
         $walker =
             new RecursiveWalker($node, RecursiveWalker::JSON_OBJECTS_ONLY);
 
         foreach ($walker as $jsonPtrString => $pair) {
             [ $jsonPtr, $subNode ] = $pair;
 
-            if (!isset($subNode->{'$ref'})) {
+            if (!($subNode instanceof JsonReferenceNode)) {
                 continue;
             }
 
             $ref = $subNode->{'$ref'};
 
-            /* In a JSON schema document, `$ref` might be a key that is being
-             * defined rather than indicating a reference object, in which
-             * case its value is an object rather than a string. */
-            if (!is_string($ref)) {
-                continue;
-            }
+            $isExternal = $subNode->isExternal();
 
             /* Action must be set by resolveInternalRef() or
                resolveExternalRef(). */
             $action = null;
 
             switch (true) {
-                case $ref[0] == '#' && $flags & self::RESOLVE_INTERNAL:
-                    $isExternal = false;
-
+                case !$isExternal && $flags & self::RESOLVE_INTERNAL:
                     $newNode = $this->resolveInternalRef($subNode, $action);
 
                     if ($action == self::SKIP) {
@@ -161,9 +153,7 @@ class ReferenceResolver
 
                     break;
 
-                case $ref[0] != '#' && $flags & self::RESOLVE_EXTERNAL:
-                    $isExternal = true;
-
+                case $isExternal && $flags & self::RESOLVE_EXTERNAL:
                     $newNode = $this->resolveExternalRef($subNode, $action);
 
                     if ($action == self::SKIP) {
@@ -219,16 +209,18 @@ class ReferenceResolver
             }
 
             /* COPY_UPON_IMPORT is necessary because the nodes might get a
-             * different PHP class upon copying. */
+             * different PHP class upon import. */
             if ($newNode instanceof JsonNode) {
-                $newNode = $node->importObjectNode(
+                $newNode = JsonNode::importObjectNode(
+                    $ownerDocument,
                     $newNode,
                     $jsonPtr,
                     JsonNode::COPY_UPON_IMPORT,
                     $subNode->getParent()
                 );
             } elseif (is_array($newNode)) {
-                $newNode = $node->importArrayNode(
+                $newNode = JsonNode::importArrayNode(
+                    $ownerDocument,
                     $newNode,
                     $jsonPtr,
                     JsonNode::COPY_UPON_IMPORT
