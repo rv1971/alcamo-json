@@ -241,7 +241,7 @@ class JsonNode
         $oldNewMap = new Map();
 
         /* Retrieve the node the current one was cloned from, if possible. */
-        foreach ((array)$data as $prop => $child) {
+        foreach ((array)$this as $prop => $child) {
             if (((string)$prop)[0] != "\0" && $child instanceof self) {
                 $oldNewMap[$child->parent_] = $this;
                 break;
@@ -256,11 +256,13 @@ class JsonNode
         );
 
         foreach ($walker as $pair) {
-            $subNode = new static(
+            $class = get_class($pair[1]);
+
+            $subNode = new $class(
                 $pair[1],
-                $node->ownerDocument_,
+                $this->ownerDocument_,
                 $pair[1]->jsonPtr_,
-                $oldNewMap[$subNode->parent_] ?? null
+                $oldNewMap[$pair[1]->parent_] ?? null
             );
 
             $walker->replaceCurrent($subNode);

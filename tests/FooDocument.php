@@ -41,6 +41,9 @@ class SlashNode extends JsonNode
 
 class TildeTildeNode extends JsonNode
 {
+    public const CLASS_MAP = [
+        '*' =>  OtherNode::class
+    ];
 }
 
 class BarNode extends JsonNode

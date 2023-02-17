@@ -147,7 +147,7 @@ class RecursiveWalker implements \Iterator
         $this->currentNode_ =
             is_array($value) ? new ReferenceContainer($value) : $value;
 
-        if ($this->currentKey_->isEmpty()) {
+        if (!isset($this->currentKey_[0])) {
             if ($this->startNode_ instanceof ReferenceContainer) {
                 $this->startNode_->value = $value;
             }

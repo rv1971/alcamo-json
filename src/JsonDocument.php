@@ -47,7 +47,7 @@ class JsonDocument
         $this->documentFactory_ = null;
     }
 
-    public function &getRoot():
+    public function &getRoot()
     {
         return $this->root_;
     }
@@ -223,5 +223,99 @@ class JsonDocument
         }
 
         $this->root_ = $resolver->resolve($this->root_);
+    }
+
+    /// Check internal structure, for debugging
+    public function checkStructure(): void
+    {
+        foreach (
+            new RecursiveWalker(
+                $this,
+                RecursiveWalker::JSON_OBJECTS_ONLY
+            ) as $pair
+        ) {
+            [ $jsonPtr, $node ] = $pair;
+
+            if ($node->getOwnerDocument() !== $this) {
+                /** @throw alcamo::exception::DataValidationFailed if node
+                 *  has a wrong owner document. */
+                throw (new DataValidationFailed())->setMessageContext(
+                    [
+                        'inData' => (string)$node,
+                        'atUri' => (string)$node->getUri(),
+                        'extraMessage' =>
+                        "\$ownerDocument_ differs from document owning this node"
+                    ]
+                );
+            }
+
+            if ((string)$node->getJsonPtr() != (string)$jsonPtr) {
+                /** @throw alcamo::exception::DataValidationFailed if node
+                 *  has a wrong JSON pointer. */
+                throw (new DataValidationFailed())->setMessageContext(
+                    [
+                        'inData' => (string)$node,
+                        'atUri' => (string)$node->getUri(),
+                        'extraMessage' =>
+                        "node's JSON pointer \"{$node->getJsonPtr()}\" "
+                        . "differs from actual position \"$jsonPtr\""
+                    ]
+                );
+            }
+
+            $parentJsonPtr = $jsonPtr->getParent();
+
+            if (isset($parentJsonPtr)) {
+                $parent = $this->getNode($parentJsonPtr);
+
+                if ($parent instanceof JsonNode) {
+                    if ($node->getParent() !== $parent) {
+                        /** @throw alcamo::exception::DataValidationFailed if
+                         *  a node's parent is not the parent node it should
+                         *  be */
+                        throw (new DataValidationFailed())->setMessageContext(
+                            [
+                                'inData' => (string)$node,
+                                'atUri' => (string)$node->getUri(),
+                                'extraMessage' =>
+                                "node's parent "
+                                . ($node->getParent()
+                                   ? "\"{$node->getParent()}\""
+                                   : "null")
+                                . " differs from correct parent at $parentJsonPtr"
+                            ]
+                        );
+                    }
+                } else {
+                    if ($node->getParent() !== null) {
+                        /** @throw alcamo::exception::DataValidationFailed if
+                         *  a node's parent is not null while it should be
+                         *  null because the parent is not a JSON object */
+                        throw (new DataValidationFailed())->setMessageContext(
+                            [
+                                'inData' => (string)$node,
+                                'atUri' => (string)$node->getUri(),
+                                'extraMessage' =>
+                                "node's parent is not null while parent is not a JSON object"
+                            ]
+                        );
+                    }
+                }
+            } else {
+                if ($node->getParent() !== null) {
+                    /** @throw alcamo::exception::DataValidationFailed if a
+                     *  node's parent is not null while it should be null
+                     *  because the current node os the root node */
+                    throw (new DataValidationFailed())->setMessageContext(
+                        [
+                            'inData' => (string)$node,
+                            'atUri' => (string)$node->getUri(),
+                            'extraMessage' =>
+                            "\$parent_ of root node is not null"
+                        ]
+                    );
+                }
+            }
+        }
     }
 }

@@ -13,8 +13,8 @@ class JsonPtrSegmentsTest extends TestCase
     public function testNewFromString(
         $string,
         $expectedSegments,
-        $expectedIsEmpty,
-        $expectedParent
+        $expectedParent,
+        $expectedIsEmpty
     ): void {
         $jsonPtrSegments = JsonPtrSegments::newFromString($string);
 
@@ -23,15 +23,13 @@ class JsonPtrSegmentsTest extends TestCase
             count($jsonPtrSegments)
         );
 
-        $this->assertSame($expectedSegments, $jsonPtrSegments->toArray());
-
         foreach ($jsonPtrSegments as $i => $segment) {
             $this->assertSame($segment, $expectedSegments[$i]);
         }
 
-        $this->assertSame($string, (string)$jsonPtrSegments);
+        $this->assertSame($expectedSegments, $jsonPtrSegments->toArray());
 
-        $this->assertSame($expectedIsEmpty, $jsonPtrSegments->isEmpty());
+        $this->assertSame($string, (string)$jsonPtrSegments);
 
         if (isset($expectedParent)) {
             $this->assertEquals(
@@ -41,17 +39,19 @@ class JsonPtrSegmentsTest extends TestCase
         } else {
             $this->assertNull($jsonPtrSegments->getParent());
         }
+
+        $this->assertSame($expectedIsEmpty, $jsonPtrSegments->isEmpty());
     }
 
     public function newFromStringProvider(): array
     {
         return [
-            [ '', [], true, null ],
+            [ '', [], null, true ],
             [
                 'foo~0~01bar/~1baz~1qux~0~1',
                 [ 'foo~~1bar', '/baz/qux~/' ],
-                false,
-                'foo~0~01bar'
+                'foo~0~01bar',
+                false
             ]
         ];
     }
