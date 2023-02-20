@@ -5,17 +5,15 @@ namespace alcamo\json;
 /**
  * @brief Convert a JSON structure to a generic DOM tree
  *
- * - Properties whose value are JSON objects are converted to DOM elements
- *   whose namespace is @ref OBJECT_NS and whose local name is the name of the
- *   JSON property converted by jsonProp2LocalName().
+ * - The document element has the namespace @ref STRUCTURE_NS and the local
+ *   name @ref DOCUMENT_LOCAL_NAME.
+ * - Properties are converted to DOM elements whose namespace is @ref
+ *   OBJECT_NS and whose local name is the name of the JSON property converted
+ *   by jsonProp2LocalName().
  * - In properties whose value are arrays:
  *   - Sub-objects are converted to <s:item> elements where s resolves to the
  *     @ref STRUCTURE_NS namespace.
- *   - Primitive values are converted to attributes named _1, _2 etc.
  *   - Sub-arrays are converted accordingly.
- * - All other properties are converted to attributes without namespace whose
- *   local name is the name of the JSON property converted by
- *   jsonProp2LocalName().
  *
  * When a tag name created by jsonProp2LocalName() differs from the property,
  * the element also has an attribute `name` that tells the original property.
@@ -45,6 +43,7 @@ class Json2Dom
     public const XML_ID_ATTRS = 2;      ///< Flag to add xml:id attributes
     public const ALWAYS_NAME_ATTRS = 4; ///< Flag to always add name attributes
 
+    /// Convert PHP types to JSON types
     public const PHP_TYPE_2_JSON_TYPE = [
         'boolean' => 'boolean',
         'integer' => 'integer',
@@ -55,7 +54,7 @@ class Json2Dom
         'NULL' => 'null'
     ];
 
-    private $flags_;
+    private $flags_; ///< int
 
     public function __construct(?int $flags = null)
     {
@@ -71,11 +70,10 @@ class Json2Dom
     {
         $domDocument = $this->createDocumentRoot();
 
-        $this->appendJsonNode(
-            $domDocument,
+        $this->append(
+            $domDocument->documentElement,
             $jsonDocument->getRoot(),
-            static::STRUCTURE_NS,
-            's:' . static::DOCUMENT_LOCAL_NAME
+            new JsonPtr()
         );
 
         if ($jsonDocument->getBaseUri() !== null) {
@@ -89,132 +87,87 @@ class Json2Dom
         return $domDocument;
     }
 
-    public function appendJsonNode(
+    public function append(
         \DOMNode $domNode,
-        JsonNode $jsonNode,
-        string $nsName,
-        string $qName,
+        $value,
+        JsonPtr $jsonPtr,
+        ?string $nsName = null,
+        ?string $qName = null,
         ?string $origName = null
     ): void {
-        $child = isset($domNode->ownerDocument)
-            ? $domNode->ownerDocument->createElementNS($nsName, $qName)
-            : $domNode->documentElement;
+        if (isset($nsName)) {
+            $child = $domNode->ownerDocument->createElementNS($nsName, $qName);
+            $domNode->appendChild($child);
 
-        $this->addAttributes(
-            $child,
-            $jsonNode,
-            $jsonNode->getJsonPtr(),
-            $origName
+            if (isset($origName)) {
+                $child->setAttribute('name', $origName);
+            } elseif (
+                $nsName == static::OBJECT_NS
+                && ($this->flags_ & self::ALWAYS_NAME_ATTRS)
+            ) {
+                $child->setAttribute('name', $child->localName);
+            }
+
+            if ($this->flags_ & self::JSON_PTR_ATTRS) {
+                $child->setAttribute('jsonPtr', $jsonPtr);
+            }
+
+            if ($this->flags_ & self::XML_ID_ATTRS) {
+                $child->setAttributeNS(
+                    self::XML_NS,
+                    'xml:id',
+                    $this->jsonPtr2XmlId($jsonPtr)
+                );
+            }
+        } else {
+            $child = $domNode;
+        }
+
+        $child->setAttribute(
+            'type',
+            static::PHP_TYPE_2_JSON_TYPE[gettype($value)]
         );
 
-        if (isset($domNode->ownerDocument)) {
-            $domNode->appendChild($child);
-        }
+        switch (true) {
+            case is_object($value):
+                foreach ($value as $prop => $item) {
+                    $localName = $this->jsonProp2LocalName($prop);
 
-        foreach ($jsonNode as $prop => $value) {
-            $localName = $this->jsonProp2LocalName($prop);
+                    $origName = ($localName != $prop) ? $prop : null;
 
-            $origName = ($localName != $prop) ? $prop : null;
-
-            switch (true) {
-                case is_object($value):
-                    $this->appendJsonNode(
-                        $child,
-                        $value,
-                        static::OBJECT_NS,
-                        $localName,
-                        $origName
-                    );
-                    break;
-
-                case is_array($value):
-                    $this->appendArray(
-                        $child,
-                        $value,
-                        static::OBJECT_NS,
-                        $localName,
-                        $jsonNode->getJsonPtr()->appendSegment($prop),
-                        $origName
-                    );
-                    break;
-
-                default:
-                    $this->appendValue(
-                        $child,
-                        $value,
-                        static::OBJECT_NS,
-                        $localName,
-                        $jsonNode->getJsonPtr()->appendSegment($prop),
-                        $origName
-                    );
-            }
-        }
-    }
-
-    public function appendArray(
-        \DOMNode $domNode,
-        array $jsonArray,
-        string $nsName,
-        string $qName,
-        JsonPtr $jsonPtr,
-        ?string $origName = null
-    ): void {
-        $child = $domNode->ownerDocument->createElementNS($nsName, $qName);
-
-        $domNode->appendChild($child);
-
-        $this->addAttributes($child, $jsonArray, $jsonPtr, $origName);
-
-        foreach ($jsonArray as $pos => $item) {
-            switch (true) {
-                case is_object($item):
-                    $this->appendJsonNode(
+                    $this->append(
                         $child,
                         $item,
+                        $jsonPtr->appendSegment($prop),
+                        static::OBJECT_NS,
+                        $localName,
+                        $origName
+                    );
+                }
+
+                break;
+
+            case is_array($value):
+                foreach ($value as $pos => $item) {
+                    $this->append(
+                        $child,
+                        $item,
+                        $jsonPtr->appendSegment($pos),
                         static::STRUCTURE_NS,
                         's:item'
                     );
-                    break;
+                }
 
-                case is_array($item):
-                    $this->appendArray(
-                        $child,
-                        $item,
-                        static::STRUCTURE_NS,
-                        's:item',
-                        $jsonPtr->appendSegment($pos)
-                    );
-                    break;
+                break;
 
-                default:
-                    $this->appendValue(
-                        $child,
-                        $item,
-                        static::STRUCTURE_NS,
-                        's:item',
-                        $jsonPtr->appendSegment($pos)
-                    );
-            }
+
+            default:
+                if (isset($value)) {
+                    $child->nodeValue = is_bool($value)
+                        ? ['false', 'true'][(int)$value]
+                        : $value;
+                }
         }
-    }
-
-    public function appendValue(
-        \DOMNode $domNode,
-        $value,
-        string $nsName,
-        string $localName,
-        JsonPtr $jsonPtr,
-        ?string $origName = null
-    ): void {
-        $child = $domNode->ownerDocument->createElementNS(
-            $nsName,
-            $localName,
-            is_bool($value) ? ['false', 'true'][(int)$value] : $value
-        );
-
-        $domNode->appendChild($child);
-
-        $this->addAttributes($child, $value, $jsonPtr, $origName);
     }
 
     /**
@@ -269,39 +222,5 @@ class Json2Dom
         );
 
         return $domDocument;
-    }
-
-    protected function addAttributes(
-        \DOMNode $domNode,
-        $value,
-        ?JsonPtr $jsonPtr,
-        ?string $origName = null
-    ): void {
-        if (isset($origName)) {
-            $domNode->setAttribute('name', $origName);
-        } elseif (
-            $domNode->namespaceURI == static::OBJECT_NS
-            && ($this->flags_ & self::ALWAYS_NAME_ATTRS)
-        ) {
-            $domNode->setAttribute('name', $domNode->localName);
-        }
-
-        $jsonType = static::PHP_TYPE_2_JSON_TYPE[gettype($value)];
-
-        $domNode->setAttribute('type', $jsonType);
-
-        if (!$jsonPtr->isRoot()) {
-            if ($this->flags_ & self::JSON_PTR_ATTRS) {
-                $domNode->setAttribute('jsonPtr', $jsonPtr);
-            }
-
-            if ($this->flags_ & self::XML_ID_ATTRS) {
-                $domNode->setAttributeNS(
-                    self::XML_NS,
-                    'xml:id',
-                    $this->jsonPtr2XmlId($jsonPtr)
-                );
-            }
-        }
     }
 }

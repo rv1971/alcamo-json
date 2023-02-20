@@ -45,6 +45,7 @@ class Json2DomTest extends TestCase
     public function convertProvider(): array
     {
         return [
+            [ 'true.json', 'true.xml' ],
             [ 'attributes.json', 'attributes.xml' ],
             [ 'objects.json', 'objects.xml' ],
             [ 'arrays.json', 'arrays.xml' ]

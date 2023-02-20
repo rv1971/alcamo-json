@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <s:document xmlns="tag:rv1971@web.de,2021:alcamo-json:j2d/object" xmlns:s="tag:rv1971@web.de,2021:alcamo-json:j2d/structure" type="object" xml:base="json2dom/objects.json">
-  <foo type="object" jsonPtr="/foo" xml:id="foo">
-    <title type="string" jsonPtr="/foo/title" xml:id="foo.title">Foo</title>
-    <content type="string" jsonPtr="/foo/content" xml:id="foo.content">Lorem ipsum</content>
+  <foo jsonPtr="/foo" xml:id="foo" type="object">
+    <title jsonPtr="/foo/title" xml:id="foo.title" type="string">Foo</title>
+    <content jsonPtr="/foo/content" xml:id="foo.content" type="string">Lorem ipsum</content>
   </foo>
-  <bar type="object" jsonPtr="/bar" xml:id="bar">
-    <_1 name="1" type="integer" jsonPtr="/bar/1" xml:id="bar.1">1</_1>
-    <_-42 name="-42" type="integer" jsonPtr="/bar/-42" xml:id="bar.-42">-42</_-42>
-    <_--.- name="()/#" type="object" jsonPtr="/bar/()~1#" xml:id="bar.---1-">
-      <_b_az_ name=" b az " type="string" jsonPtr="/bar/()~1#/ b az " xml:id="bar.---1-._b_az_"> At vero eos et  accusam et justo duo dolores et ea rebum. </_b_az_>
+  <bar jsonPtr="/bar" xml:id="bar" type="object">
+    <_1 name="1" jsonPtr="/bar/1" xml:id="bar.1" type="integer">1</_1>
+    <_-42 name="-42" jsonPtr="/bar/-42" xml:id="bar.-42" type="integer">-42</_-42>
+    <_--.- name="()/#" jsonPtr="/bar/()~1#" xml:id="bar.---1-" type="object">
+      <_b_az_ name=" b az " jsonPtr="/bar/()~1#/ b az " xml:id="bar.---1-._b_az_" type="string"> At vero eos et  accusam et justo duo dolores et ea rebum. </_b_az_>
     </_--.->
   </bar>
 </s:document>
