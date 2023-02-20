@@ -150,8 +150,10 @@ class Json2Dom
         ?string $origName = null
     ): void {
         if (isset($nsName)) {
-            $child = $this
-                ->createChild($domNode, $jsonPtr, $nsName, $qName, $origName);
+            $child = $domNode->ownerDocument->createElementNS($nsName, $qName);
+            $domNode->appendChild($child);
+
+            $this->addAttributes($child, $jsonPtr, $nsName, $qName, $origName);
         } else {
             $child = $domNode;
         }
@@ -203,37 +205,32 @@ class Json2Dom
         }
     }
 
-    protected function createChild(
+    protected function addAttributes(
         \DOMNode $domNode,
         JsonPtr $jsonPtr,
         string $nsName,
         string $qName,
         ?string $origName = null
-    ): \DOMElement {
-        $child = $domNode->ownerDocument->createElementNS($nsName, $qName);
-        $domNode->appendChild($child);
-
+    ): void {
         if (isset($origName)) {
-            $child->setAttribute('name', $origName);
+            $domNode->setAttribute('name', $origName);
         } elseif (
             $nsName == static::OBJECT_NS
             && ($this->flags_ & self::ALWAYS_NAME_ATTRS)
         ) {
-            $child->setAttribute('name', $child->localName);
+            $domNode->setAttribute('name', $domNode->localName);
         }
 
         if ($this->flags_ & self::JSON_PTR_ATTRS) {
-            $child->setAttribute('jsonPtr', $jsonPtr);
+            $domNode->setAttribute('jsonPtr', $jsonPtr);
         }
 
         if ($this->flags_ & self::XML_ID_ATTRS) {
-            $child->setAttributeNS(
+            $domNode->setAttributeNS(
                 self::XML_NS,
                 'xml:id',
                 $this->jsonPtr2XmlId($jsonPtr)
             );
         }
-
-        return $child;
     }
 }
