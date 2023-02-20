@@ -9,6 +9,8 @@ require_once __DIR__ . DIRECTORY_SEPARATOR . 'FooDocument.php';
 
 /*
  * JsonNode::resolveUri() is implicitely tested in ReferenceResolverTest.php
+ *
+ * JsonNode::resolveReferences() is implicitely tested in JsonDocumentTest.php
  */
 class JsonNodeTest extends TestCase
 {

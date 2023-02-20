@@ -144,17 +144,15 @@ class RecursiveWalker implements \Iterator
             );
         }
 
+        $isStartNode = $this->currentNode_ === $this->startNode_;
+
         $this->currentNode_ =
             is_array($value) ? new ReferenceContainer($value) : $value;
 
-        if (!isset($this->currentKey_[0])) {
+        if ($isStartNode) {
             if ($this->startNode_ instanceof ReferenceContainer) {
                 $this->startNode_->value = $value;
             }
-
-            $this->currentKey_ = $value instanceof JsonNnode
-                ? new JsonPtr()
-                : new JsonPtrSegments();
 
             $this->startNode_ = $this->currentNode_;
         } else {

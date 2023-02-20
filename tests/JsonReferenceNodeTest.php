@@ -161,6 +161,5 @@ class JsonReferenceNodeTest extends TestCase
             'http://example.biz/data/old/data.json',
             $node3->{'$ref'}
         );
-
     }
 }

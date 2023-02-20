@@ -3,12 +3,13 @@
 namespace alcamo\json;
 
 use alcamo\exception\{DataValidationFailed, Recursion};
+use alcamo\uri\FileUriFactory;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\UriInterface;
 
 class MyReferenceResolver extends ReferenceResolver
 {
-    public function resolveInternalRef(JsonNode $node, ?int &$action)
+    public function resolveInternalRef(JsonReferenceNode $node, ?int &$action)
     {
         switch (substr($node->{'$ref'}, -3)) {
             case 'foo':
@@ -34,7 +35,7 @@ class MyReferenceResolver extends ReferenceResolver
         }
     }
 
-    public function resolveExternalRef(JsonNode $node, ?int &$action)
+    public function resolveExternalRef(JsonReferenceNode $node, ?int &$action)
     {
         switch (substr($node->{'$ref'}, -3)) {
             case 'foo':
@@ -83,180 +84,178 @@ class ReferenceResolverTest extends TestCase
     {
         $factory = new JsonDocumentFactory();
 
-        $jsonDoc = $factory->createFromUrl(
-            'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::BAR_FILENAME)
+        $barDoc = $factory->createFromUrl(
+            (new FileUriFactory())->create(self::BAR_FILENAME)
         );
 
-        self::checkStructure($jsonDoc);
+        $barDoc->checkStructure();
 
-        $jsonDoc2 = clone $jsonDoc;
+        $barDoc2 = clone $barDoc;
 
-        self::checkStructure($jsonDoc2);
+        $barDoc2->checkStructure();
 
         $this->assertEquals(
-            (string)$jsonDoc->getRoot(),
-            (string)$jsonDoc2->getRoot()
+            (string)$barDoc->getRoot(),
+            (string)$barDoc2->getRoot()
         );
 
         // does nothing, bar.json has no external references
-        $jsonDoc2->resolveReferences(ReferenceResolver::RESOLVE_EXTERNAL);
+        $barDoc2->resolveReferences(ReferenceResolver::RESOLVE_EXTERNAL);
 
-        self::checkStructure($jsonDoc2);
+        $barDoc2->checkStructure();
 
         $this->assertEquals(
-            (string)$jsonDoc->getRoot(),
-            (string)$jsonDoc2->getRoot()
+            (string)$barDoc->getRoot(),
+            (string)$barDoc2->getRoot()
         );
 
-        $jsonDoc2->resolveReferences();
+        $barDoc2->resolveReferences();
 
-        self::checkStructure($jsonDoc2);
+        $barDoc2->checkStructure();
 
-        $this->assertNotEquals($jsonDoc, $jsonDoc2);
+        $this->assertNotEquals($barDoc, $barDoc2);
 
         // check that all references have been replaced.
-        $this->assertSame(false, strpos($jsonDoc2->getRoot(), '$ref'));
+        $this->assertSame(false, strpos($barDoc2->getRoot(), '$ref'));
 
-        $this->assertSame('Lorem ipsum', $jsonDoc2->getRoot()->bar->foo);
+        $this->assertSame('Lorem ipsum', $barDoc2->getRoot()->bar->foo);
 
-        $this->assertSame(42, $jsonDoc2->getRoot()->bar->bar[0]);
-
-        $this->assertSame(
-            (string)$jsonDoc2->getRoot()->defs->baz,
-            (string)$jsonDoc2->getRoot()->bar->bar[1]
-        );
-
-        $this->assertSame(true, $jsonDoc2->getRoot()->bar->bar[1]->qux2);
+        $this->assertSame(42, $barDoc2->getRoot()->bar->bar[0]);
 
         $this->assertSame(
-            $jsonDoc2->getRoot()->defs->qux,
-            $jsonDoc2->getRoot()->bar->bar[2]
+            (string)$barDoc2->getRoot()->defs->baz,
+            (string)$barDoc2->getRoot()->bar->bar[1]
         );
 
-        $this->assertSame(true, $jsonDoc2->getRoot()->defs->baz->qux2);
+        $this->assertSame(true, $barDoc2->getRoot()->bar->bar[1]->qux2);
+
+        $this->assertSame(
+            $barDoc2->getRoot()->defs->qux,
+            $barDoc2->getRoot()->bar->bar[2]
+        );
+
+        $this->assertSame(true, $barDoc2->getRoot()->defs->baz->qux2);
 
         $this->assertSame(
             [ "Lorem", "ipsum", true, 43, false, null ],
-            $jsonDoc2->getRoot()->bar->bar[2]
+            $barDoc2->getRoot()->bar->bar[2]
         );
 
-        $this->assertSame(null, $jsonDoc2->getRoot()->bar->bar[3]);
+        $this->assertSame(null, $barDoc2->getRoot()->bar->bar[3]);
 
         // replace refs only in part of the document
 
-        $jsonDoc3 = clone $jsonDoc;
+        $barDoc3 = clone $barDoc;
 
-        $jsonDoc3->getRoot()->bar->bar[3]->resolveReferences();
+        $barDoc3->getRoot()->bar->bar[3] =
+            $barDoc3->getRoot()->bar->bar[3]->resolveReferences();
 
-        $this->assertSame(null, $jsonDoc3->getRoot()->bar->bar[3]);
+        $this->assertSame(null, $barDoc3->getRoot()->bar->bar[3]);
 
         $this->assertSame(
             '#/defs/qux/5',
-            $jsonDoc3->getRoot()->defs->quux->{'$ref'}
+            $barDoc3->getRoot()->defs->quux->{'$ref'}
         );
     }
 
     // replace a document node by another document node
     public function testResolveExternal1()
     {
-        $bazUri = 'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::BAZ_FILENAME);
+        $bazUri = (new FileUriFactory())->create(self::BAZ_FILENAME);
 
         $factory = new JsonDocumentFactory();
 
-        $jsonDoc = $factory->createFromUrl($bazUri);
+        $bazDoc = $factory->createFromUrl($bazUri);
 
-        self::checkStructure($jsonDoc);
+        $bazDoc->checkStructure();
 
-        $jsonDoc2 = clone $jsonDoc;
-
-        $this->assertEquals(
-            (string)$jsonDoc->getRoot(),
-            (string)$jsonDoc2->getRoot()
-        );
-
-        $jsonDoc2->resolveReferences(ReferenceResolver::RESOLVE_INTERNAL);
-
-        self::checkStructure($jsonDoc2);
+        $bazDoc2 = clone $bazDoc;
 
         $this->assertEquals(
-            (string)$jsonDoc->getRoot(),
-            (string)$jsonDoc2->getRoot()
+            (string)$bazDoc->getRoot(),
+            (string)$bazDoc2->getRoot()
         );
 
-        $jsonDoc2->resolveReferences(ReferenceResolver::RESOLVE_EXTERNAL);
+        $bazDoc2->resolveReferences(ReferenceResolver::RESOLVE_INTERNAL);
 
-        $this->assertNotEquals($jsonDoc, $jsonDoc2);
+        $bazDoc2->checkStructure();
 
-        $this->assertFalse(isset($jsonDoc2->getRoot()->foo->{'$ref'}));
+        $this->assertEquals(
+            (string)$bazDoc->getRoot(),
+            (string)$bazDoc2->getRoot()
+        );
 
-        $jsonDoc2->resolveReferences();
+        $bazDoc2->resolveReferences(ReferenceResolver::RESOLVE_EXTERNAL);
 
-        $this->assertNotEquals($jsonDoc, $jsonDoc2);
+        $this->assertNotEquals($bazDoc, $bazDoc2);
+
+        $this->assertFalse(isset($bazDoc2->getRoot()->foo->{'$ref'}));
+
+        $bazDoc2->resolveReferences();
+
+        $this->assertNotEquals($bazDoc, $bazDoc2);
 
         // check that all references have been replaced
-        $this->assertSame(false, strpos($jsonDoc2->getRoot(), '$ref'));
+        $this->assertSame(false, strpos($bazDoc2->getRoot(), '$ref'));
 
-        $this->assertSame('Lorem ipsum', $jsonDoc2->getRoot()->foo);
+        $this->assertSame('Lorem ipsum', $bazDoc2->getRoot()->foo);
     }
 
     // other internal/external replacements
     public function testResolveExternal2()
     {
-        $quxUri = 'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::QUX_FILENAME);
+        $quxUri = (new FileUriFactory())->create(self::QUX_FILENAME);
 
         $factory = new JsonDocumentFactory();
 
-        $jsonDoc = $factory->createFromUrl($quxUri);
+        $quxDoc = $factory->createFromUrl($quxUri);
 
-        self::checkStructure($jsonDoc);
+        $quxDoc->checkStructure();
 
-        $jsonDoc2 = clone $jsonDoc;
+        $quxDoc2 = clone $quxDoc;
 
-        $jsonDoc2->resolveReferences();
+        $quxDoc2->resolveReferences();
 
-        $this->assertNotEquals($jsonDoc, $jsonDoc2);
+        $this->assertNotEquals($quxDoc, $quxDoc2);
 
         // check that all references have been replaced
-        $this->assertSame(false, strpos($jsonDoc2->getRoot(), '$ref'));
+        $this->assertSame(false, strpos($quxDoc2->getRoot(), '$ref'));
 
         // replace node by external node, which has been resolved internally
-        $this->assertSame('Lorem ipsum', $jsonDoc2->getRoot()->foo);
+        $this->assertSame('Lorem ipsum', $quxDoc2->getRoot()->foo);
 
         // replace node by external node, which has been resolved internally
         // to an array
-        $this->assertSame(42, $jsonDoc2->getRoot()->bar[0]);
-        $this->assertSame(true, $jsonDoc2->getRoot()->bar[1]->qux2);
+        $this->assertSame(42, $quxDoc2->getRoot()->bar[0]);
+        $this->assertSame(true, $quxDoc2->getRoot()->bar[1]->qux2);
 
         // replacement via multiple files
-        $this->assertSame(null, $jsonDoc2->getRoot()->quux);
+        $this->assertSame(null, $quxDoc2->getRoot()->quux);
 
-        $this->assertNotSame($jsonDoc->getBaseUri(), $jsonDoc2->getBaseUri());
+        $this->assertNotSame($quxDoc->getBaseUri(), $quxDoc2->getBaseUri());
 
-        $this->assertEquals($jsonDoc->getBaseUri(), $jsonDoc2->getBaseUri());
+        $this->assertEquals($quxDoc->getBaseUri(), $quxDoc2->getBaseUri());
 
         // node URI is computed from document URI
         $this->assertEquals(
             "$quxUri#/bar/1",
-            $jsonDoc2->getRoot()->bar[1]->getUri()
+            $quxDoc2->getRoot()->bar[1]->getUri()
         );
 
         // check that key "0200" in quux.json is correctly preserved
         $this->assertSame(
             'data with weird key',
-            $jsonDoc2->getRoot()->corge->{'200'}
+            $quxDoc2->getRoot()->corge->{'200'}
         );
 
         $this->assertSame(
             'data with very weird key',
-            $jsonDoc2->getRoot()->corge->{'0200'}
+            $quxDoc2->getRoot()->corge->{'0200'}
         );
 
         $this->assertSame(
             'data with extremely weird key',
-            $jsonDoc2->getRoot()->corge->{'00200'}
+            $quxDoc2->getRoot()->corge->{'00200'}
         );
     }
 
@@ -265,8 +264,7 @@ class ReferenceResolverTest extends TestCase
         $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
-            'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::RECURSIVE_FILENAME)
+            (new FileUriFactory())->create(self::RECURSIVE_FILENAME)
         );
 
         $this->expectException(Recursion::class);
@@ -282,28 +280,27 @@ class ReferenceResolverTest extends TestCase
     {
         $factory = new JsonDocumentFactory();
 
-        $jsonDoc = $factory->createFromUrl(
-            'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::BAR_FILENAME)
+        $barDoc = $factory->createFromUrl(
+            (new FileUriFactory())->create(self::BAR_FILENAME)
         );
 
-        $jsonDoc->resolveReferences(
+        $barDoc->resolveReferences(
             new MyReferenceResolver(ReferenceResolver::RESOLVE_INTERNAL)
         );
 
         $this->assertSame(
             '#/defs/foo',
-            $jsonDoc->getNode(JsonPtr::newFromString('/bar/foo/$ref'))
+            $barDoc->getNode(JsonPtr::newFromString('/bar/foo/$ref'))
         );
 
         $this->assertSame(
             'http://www.example.org#bar',
-            $jsonDoc->getNode(JsonPtr::newFromString('/bar/bar/0/$ref'))
+            $barDoc->getNode(JsonPtr::newFromString('/bar/bar/0/$ref'))
         );
 
         $this->assertSame(
             'Resolved from #/defs/baz',
-            $jsonDoc->getNode(JsonPtr::newFromString('/bar/bar/1/comment'))
+            $barDoc->getNode(JsonPtr::newFromString('/bar/bar/1/comment'))
         );
     }
 
@@ -312,12 +309,7 @@ class ReferenceResolverTest extends TestCase
         $factory = new JsonDocumentFactory();
 
         $jsonDoc = $factory->createFromUrl(
-            'file://'
-            . str_replace(
-                DIRECTORY_SEPARATOR,
-                '/',
-                self::CUSTOM_EXTERNAL_FILENAME
-            )
+            (new FileUriFactory())->create(self::CUSTOM_EXTERNAL_FILENAME)
         );
 
         $jsonDoc->resolveReferences(

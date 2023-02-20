@@ -2,11 +2,27 @@
 
 namespace alcamo\json;
 
+use alcamo\uri\FileUriFactory;
 use PHPUnit\Framework\TestCase;
 
 class RecursiveWalkerTest extends TestCase
 {
     public const FOO_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'foo.json';
+
+    public function getFooDoc(): JsonDocument
+    {
+        static $factory;
+
+        if (!isset($factory)) {
+            $factory = new JsonDocumentFactory();
+        }
+
+        $fooDoc = $factory->createFromUrl(
+            (new FileUriFactory())->create(self::FOO_FILENAME)
+        );
+
+        return $fooDoc;
+    }
 
     /**
      * @dataProvider walkerProvider
@@ -32,15 +48,11 @@ class RecursiveWalkerTest extends TestCase
 
     public function walkerProvider()
     {
-        $factory = new JsonDocumentFactory();
-
-        $jsonDoc = $factory->createFromJsonText(
-            file_get_contents(self::FOO_FILENAME)
-        );
+        $fooDoc = $this->getFooDoc();
 
         return [
             [
-                $jsonDoc->getRoot()->foo,
+                $fooDoc->getRoot()->foo,
                 null,
                 [
                     '/foo' => JsonNode::class,
@@ -53,11 +65,12 @@ class RecursiveWalkerTest extends TestCase
                     '/foo/~0~0/~1~0/2' => 7,
                     '/foo/~0~0/~1~0/3' => 11,
                     '/foo/~0~0/~1~0/4' => 13,
-                    '/foo/~0~0/~1~0/5' => 17
+                    '/foo/~0~0/~1~0/5' => 17,
+                    '/foo/~0~0/0' => JsonNode::class
                 ]
             ],
             [
-                $jsonDoc->getRoot()->bar->baz->qux[5],
+                $fooDoc->getRoot()->bar->baz->qux[5],
                 RecursiveWalker::OMIT_START_NODE,
                 [
                     '/bar/baz/qux/5/FOO' => JsonNode::class,
@@ -67,7 +80,7 @@ class RecursiveWalkerTest extends TestCase
                 ]
             ],
             [
-                $jsonDoc->getRoot(),
+                $fooDoc->getRoot(),
                 null,
                 [
                     '/' => JsonNode::class,
@@ -82,6 +95,7 @@ class RecursiveWalkerTest extends TestCase
                     '/foo/~0~0/~1~0/3' => 11,
                     '/foo/~0~0/~1~0/4' => 13,
                     '/foo/~0~0/~1~0/5' => 17,
+                    '/foo/~0~0/0' => JsonNode::class,
                     '/bar' => JsonNode::class,
                     '/bar/baz' => JsonNode::class,
                     '/bar/baz/qux' => 'array',
@@ -115,13 +129,14 @@ class RecursiveWalkerTest extends TestCase
                 ]
             ],
             [
-                $jsonDoc->getRoot(),
+                $fooDoc->getRoot(),
                 RecursiveWalker::JSON_OBJECTS_ONLY,
                 [
                     '/' => JsonNode::class,
                     '/foo' => JsonNode::class,
                     '/foo/~1' => JsonNode::class,
                     '/foo/~0~0' => JsonNode::class,
+                    '/foo/~0~0/0' => JsonNode::class,
                     '/bar' => JsonNode::class,
                     '/bar/baz' => JsonNode::class,
                     '/bar/baz/qux/5' => JsonNode::class,
@@ -134,7 +149,7 @@ class RecursiveWalkerTest extends TestCase
                 ]
             ],
             [
-                $jsonDoc->getRoot()->bar->baz->qux,
+                $fooDoc->getRoot()->bar->baz->qux,
                 null,
                 [
                     '' => 'array',
@@ -165,7 +180,7 @@ class RecursiveWalkerTest extends TestCase
                 ]
             ],
             [
-                $jsonDoc->getRoot()->bar->baz->qux,
+                $fooDoc->getRoot()->bar->baz->qux,
                 RecursiveWalker::JSON_OBJECTS_ONLY,
                 [
                     '5' => JsonNode::class,
@@ -177,7 +192,7 @@ class RecursiveWalkerTest extends TestCase
                 ]
             ],
             [
-                $jsonDoc->getRoot()->bar->baz->qux[6],
+                $fooDoc->getRoot()->bar->baz->qux[6],
                 null,
                 [
                     '' => 'array',
@@ -197,47 +212,47 @@ class RecursiveWalkerTest extends TestCase
                 ]
             ],
             [
-                $jsonDoc->getRoot()->bar->baz->qux[0],
+                $fooDoc->getRoot()->bar->baz->qux[0],
                 null,
                 [
                     '' => 1
                 ]
             ],
             [
-                $jsonDoc->getRoot()->bar->baz->qux[1],
+                $fooDoc->getRoot()->bar->baz->qux[1],
                 null,
                 [
                     '' => 'Lorem ipsum'
                 ]
             ],
             [
-                $jsonDoc->getRoot()->bar->baz->qux[2],
+                $fooDoc->getRoot()->bar->baz->qux[2],
                 null,
                 [
                     '' => null
                 ]
             ],
             [
-                $jsonDoc->getRoot()->bar->baz->qux[3],
+                $fooDoc->getRoot()->bar->baz->qux[3],
                 null,
                 [
                     '' => true
                 ]
             ],
             [
-                $jsonDoc->getRoot()->bar->baz->qux[4],
+                $fooDoc->getRoot()->bar->baz->qux[4],
                 null,
                 [
                     '' => false
                 ]
             ],
             [
-                $jsonDoc->getRoot()->bar->baz->qux[0],
+                $fooDoc->getRoot()->bar->baz->qux[0],
                 RecursiveWalker::OMIT_START_NODE,
                 []
             ],
             [
-                $jsonDoc->getRoot()->bar->baz->qux[0],
+                $fooDoc->getRoot()->bar->baz->qux[0],
                 RecursiveWalker::JSON_OBJECTS_ONLY,
                 []
             ]
@@ -246,15 +261,11 @@ class RecursiveWalkerTest extends TestCase
 
     public function testSkipChildren()
     {
-        $factory = new JsonDocumentFactory();
-
-        $jsonDoc = $factory->createFromJsonText(
-            file_get_contents(self::FOO_FILENAME)
-        );
+        $fooDoc = $this->getFooDoc();
 
         $nodes = [];
 
-        $walker = new RecursiveWalker($jsonDoc);
+        $walker = new RecursiveWalker($fooDoc);
 
         foreach ($walker as $ptr => $pair) {
             switch ($ptr) {
@@ -290,27 +301,23 @@ class RecursiveWalkerTest extends TestCase
     // replaceCurrent() when start node is a JsonNode
     public function testReplaceCurrent1()
     {
-        $factory = new JsonDocumentFactory();
-
-        $jsonDoc = $factory->createFromJsonText(
-            file_get_contents(self::FOO_FILENAME)
-        );
+        $fooDoc = $this->getFooDoc();
 
         // replaceCurrent() on a node in an object
-        $jsonDoc2 = clone $jsonDoc;
+        $fooDoc2 = clone $fooDoc;
 
-        $walker = new RecursiveWalker($jsonDoc2->getRoot()->bar);
+        $walker = new RecursiveWalker($fooDoc2->getRoot()->bar);
 
         $walker->next();
 
         $walker->replaceCurrent('Lorem ipsum');
 
-        $this->assertSame('Lorem ipsum', $jsonDoc2->getRoot()->bar->baz);
+        $this->assertSame('Lorem ipsum', $fooDoc2->getRoot()->bar->baz);
 
         // replaceCurrent() on a node in an array
-        $jsonDoc2 = clone $jsonDoc;
+        $fooDoc2 = clone $fooDoc;
 
-        $walker = new RecursiveWalker($jsonDoc2->getRoot()->bar->baz);
+        $walker = new RecursiveWalker($fooDoc2->getRoot()->bar->baz);
 
         $walker->next();
 
@@ -318,13 +325,13 @@ class RecursiveWalkerTest extends TestCase
 
         $walker->replaceCurrent('dolor');
 
-        $this->assertSame('dolor', $jsonDoc2->getRoot()->bar->baz->qux[0]);
+        $this->assertSame('dolor', $fooDoc2->getRoot()->bar->baz->qux[0]);
 
         // replaceCurrent() on a node in a nested array
-        $jsonDoc2 = clone $jsonDoc;
+        $fooDoc2 = clone $fooDoc;
 
         $walker = new RecursiveWalker(
-            $jsonDoc2->getRoot()->bar->baz,
+            $fooDoc2->getRoot()->bar->baz,
             RecursiveWalker::JSON_OBJECTS_ONLY
         );
 
@@ -334,34 +341,34 @@ class RecursiveWalkerTest extends TestCase
 
         $walker->replaceCurrent('dolor');
 
-        $this->assertSame('dolor', $jsonDoc2->getRoot()->bar->baz->qux[6][0][2]);
+        $this->assertSame('dolor', $fooDoc2->getRoot()->bar->baz->qux[6][0][2]);
 
         // replaceCurrent() on the start node
-        $jsonDoc2 = clone $jsonDoc;
+        $fooDoc2 = clone $fooDoc;
 
-        $walker = new RecursiveWalker($jsonDoc2->getRoot()->foo);
+        $walker = new RecursiveWalker($fooDoc2->getRoot()->foo);
 
         $walker->replaceCurrent('Lorem ipsum');
 
-        $this->assertSame('Lorem ipsum', $jsonDoc2->getRoot()->foo);
+        $this->assertSame('Lorem ipsum', $fooDoc2->getRoot()->foo);
 
         // replaceCurrent() on the document node
-        $jsonDoc2 = clone $jsonDoc;
+        $fooDoc2 = clone $fooDoc;
 
-        $walker = new RecursiveWalker($jsonDoc2);
+        $walker = new RecursiveWalker($fooDoc2);
 
-        $walker->replaceCurrent($jsonDoc2->getRoot()->foo);
+        $walker->replaceCurrent($fooDoc2->getRoot()->foo);
 
-        $this->assertSame(42, $jsonDoc2->getRoot()->{'/'}->{'~/'});
+        $this->assertSame(42, $fooDoc2->getRoot()->{'/'}->{'~/'});
 
         // replace by array
-        $jsonDoc2 = clone $jsonDoc;
+        $fooDoc2 = clone $fooDoc;
 
-        $walker = new RecursiveWalker($jsonDoc2);
+        $walker = new RecursiveWalker($fooDoc2);
 
         $walker->next();
 
-        $walker->replaceCurrent($jsonDoc2->getRoot()->bar->baz->qux[6]);
+        $walker->replaceCurrent($fooDoc2->getRoot()->bar->baz->qux[6]);
 
         $walker->next();
         $walker->next();
@@ -369,11 +376,11 @@ class RecursiveWalkerTest extends TestCase
         $this->assertSame(43, $walker->current()[1]);
 
         // replace start node by array
-        $jsonDoc2 = clone $jsonDoc;
+        $fooDoc2 = clone $fooDoc;
 
-        $walker = new RecursiveWalker($jsonDoc2->getRoot()->foo->{'/'});
+        $walker = new RecursiveWalker($fooDoc2->getRoot()->foo->{'/'});
 
-        $walker->replaceCurrent($jsonDoc2->getRoot()->bar->baz->qux[6]);
+        $walker->replaceCurrent($fooDoc2->getRoot()->bar->baz->qux[6]);
 
         $walker->next();
         $walker->next();
@@ -381,7 +388,9 @@ class RecursiveWalkerTest extends TestCase
         $this->assertSame(43, $walker->current()[1]);
 
         // replace again the same node
-        $walker->replaceCurrent($jsonDoc2->getRoot()->bar->baz->qux[6][0][2]->QUUX);
+        $walker->replaceCurrent(
+            $fooDoc2->getRoot()->bar->baz->qux[6][0][2]->QUUX
+        );
 
         $this->assertSame(true, $walker->current()[1]->CORGE);
     }
@@ -389,22 +398,18 @@ class RecursiveWalkerTest extends TestCase
     // replaceCurrent() when start node is an array
     public function testReplaceCurrent2()
     {
-        $factory = new JsonDocumentFactory();
-
-        $jsonDoc = $factory->createFromJsonText(
-            file_get_contents(self::FOO_FILENAME)
-        );
+        $fooDoc = $this->getFooDoc();
 
         // replaceCurrent() on a node in an array
-        $jsonDoc2 = clone $jsonDoc;
+        $fooDoc2 = clone $fooDoc;
 
-        $walker = new RecursiveWalker($jsonDoc2->getRoot()->bar->baz->qux);
+        $walker = new RecursiveWalker($fooDoc2->getRoot()->bar->baz->qux);
 
         $walker->next();
 
         $walker->replaceCurrent('consetetur');
 
-        $this->assertSame('consetetur', $jsonDoc2->getRoot()->bar->baz->qux[0]);
+        $this->assertSame('consetetur', $fooDoc2->getRoot()->bar->baz->qux[0]);
 
         // replaceCurrent() on a node in an object
         for ($i = 0; $i < 6; $i++) {
@@ -413,7 +418,7 @@ class RecursiveWalkerTest extends TestCase
 
         $walker->replaceCurrent(4242);
 
-        $this->assertSame(4242, $jsonDoc2->getRoot()->bar->baz->qux[5]->FOO);
+        $this->assertSame(4242, $fooDoc2->getRoot()->bar->baz->qux[5]->FOO);
 
         // replaceCurrent() on a node in a nested array
         for ($i = 0; $i < 3; $i++) {
@@ -422,15 +427,15 @@ class RecursiveWalkerTest extends TestCase
 
         $walker->replaceCurrent(false);
 
-        $this->assertSame(false, $jsonDoc2->getRoot()->bar->baz->qux[6][0][0]);
+        $this->assertSame(false, $fooDoc2->getRoot()->bar->baz->qux[6][0][0]);
 
         // replaceCurrent() on the start node
-        $jsonDoc2 = clone $jsonDoc;
+        $fooDoc2 = clone $fooDoc;
 
-        $walker = new RecursiveWalker($jsonDoc2->getRoot()->bar->baz->qux[6]);
+        $walker = new RecursiveWalker($fooDoc2->getRoot()->bar->baz->qux[6]);
 
         $walker->replaceCurrent('sit amet');
 
-        $this->assertSame('sit amet', $jsonDoc2->getRoot()->bar->baz->qux[6]);
+        $this->assertSame('sit amet', $fooDoc2->getRoot()->bar->baz->qux[6]);
     }
 }
