@@ -10,7 +10,11 @@ use Psr\Http\Message\UriInterface;
  */
 class JsonDocument
 {
+    /// Default class to use to create a JSON object node
     public const NODE_CLASS = JsonNode::class;
+
+    /// Default class to use to create a document factory
+    public const DOCUMENT_FACTORY_CLASS = JsonDocumentFactory::class;
 
     private $root_;            ///< JsonNode, array or primitive type
     private $baseUri_;         ///< ?UriInterface
@@ -61,7 +65,9 @@ class JsonDocument
     public function getDocumentFactory(): JsonDocumentFactory
     {
         if (!isset($this->documentFactory_)) {
-            $this->documentFactory_ = new JsonDocumentFactory();
+            $class = static::DOCUMENT_FACTORY_CLASS;
+
+            $this->documentFactory_ = new $class();
         }
 
         return $this->documentFactory_;
@@ -218,11 +224,7 @@ class JsonDocument
     public function resolveReferences(
         $resolver = ReferenceResolver::RESOLVE_ALL
     ): void {
-        if (!($resolver instanceof ReferenceResolver)) {
-            $resolver = new ReferenceResolver($resolver);
-        }
-
-        $this->root_ = $resolver->resolve($this->root_);
+        $this->root_ = $this->root_->resolveReferences($resolver);
     }
 
     /// Check internal structure, for debugging

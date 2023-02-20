@@ -3,13 +3,28 @@
 namespace alcamo\json;
 
 use alcamo\exception\SyntaxError;
+use alcamo\uri\FileUriFactory;
 use PHPUnit\Framework\TestCase;
 
 class JsonDocumentFactoryTest extends TestCase
 {
     public const FOO_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'foo.json';
 
-    public function testCreateFromUrl()
+    public function testCreateFromJsonText(): void
+    {
+        $factory = new JsonDocumentFactory();
+
+        $jsonDoc = $factory->createFromJsonText(
+            '[ null, true, "Lorem ipsum", 42 ]'
+        );
+
+        $this->assertSame(
+            [ null, true, "Lorem ipsum", 42 ],
+            $jsonDoc->getRoot()
+        );
+    }
+
+    public function testCreateFromUrl(): void
     {
         $factory = new JsonDocumentFactory();
 
@@ -21,17 +36,14 @@ class JsonDocumentFactoryTest extends TestCase
 
         $this->assertSame(17, $jsonDoc->getRoot()->foo->{'~~'}->{'/~'}[5]);
 
-        $jsonDoc2 = $factory->createFromUrl(
-            'file://'
-            . str_replace(DIRECTORY_SEPARATOR, '/', self::FOO_FILENAME)
-            . '#/foo/~1'
+        $jsonDoc2Node = $factory->createFromUrl(
+            (new FileUriFactory())->create(self::FOO_FILENAME)
+                ->withFragment('/foo/~1')
         );
 
-        $this->assertInstanceOf(JsonNode::class, $jsonDoc2);
+        $this->assertInstanceOf(JsonNode::class, $jsonDoc2Node);
 
-        $this->assertNotInstanceOf(JsonDocument::class, $jsonDoc2);
-
-        $this->assertSame(42, $jsonDoc2->{'~/'});
+        $this->assertSame(42, $jsonDoc2Node->{'~/'});
 
         $factory2 = new JsonDocumentFactory(null, null, JSON_BIGINT_AS_STRING);
 
@@ -42,7 +54,7 @@ class JsonDocumentFactoryTest extends TestCase
         $this->assertSame($bigint, $jsonDoc3->getRoot()->foo);
     }
 
-    public function testException()
+    public function testException(): void
     {
         $factory = new JsonDocumentFactory();
 

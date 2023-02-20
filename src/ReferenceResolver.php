@@ -60,7 +60,7 @@ class ReferenceResolver
      * - @ref CONTINUE_RECURSION
      *
      * This implementation calls JsonDocument::getNode() (which may be a
-     * JsonNode object, an array or a primitive type), creates a deep copy of
+     * JsonNode object, an array or a primitive type), creates a clone of
      * it if it is a JsonNode, and asks the caller to continue recursive
      * resolution on the new node.
      *
@@ -69,7 +69,7 @@ class ReferenceResolver
      * unchanged, or to prevent further recursion on this node.
      *
      * @warning When overriding this method to return a JsonNode from $node's
-     * owner document, a deep copy must be created.
+     * owner document, a clone must be created.
      */
     protected function resolveInternalRef(
         JsonReferenceNode $node,
@@ -78,7 +78,7 @@ class ReferenceResolver
         $newNode = $node->getTarget();
 
         if ($newNode instanceof JsonNode) {
-            $newNode = $newNode->createDeepCopy();
+            $newNode = clone $newNode;
         }
 
         $action = self::CONTINUE_RECURSION;

@@ -11,7 +11,7 @@ class JsonReferenceNodeTest extends TestCase
 
     public const BAR_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'bar.json';
 
-    public function getFooDoc(bool $check = false): JsonDocument
+    public function getFooDoc(): JsonDocument
     {
         static $factory;
 

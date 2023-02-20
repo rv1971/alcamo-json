@@ -14,7 +14,7 @@ class JsonNodeTest extends TestCase
 {
     public const FOO_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . 'foo.json';
 
-    public function getFooDoc(bool $check = false): JsonDocument
+    public function getFooDoc(): JsonDocument
     {
         static $factory;
 
