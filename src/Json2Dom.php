@@ -87,89 +87,6 @@ class Json2Dom
         return $domDocument;
     }
 
-    public function append(
-        \DOMNode $domNode,
-        $value,
-        JsonPtr $jsonPtr,
-        ?string $nsName = null,
-        ?string $qName = null,
-        ?string $origName = null
-    ): void {
-        if (isset($nsName)) {
-            $child = $domNode->ownerDocument->createElementNS($nsName, $qName);
-            $domNode->appendChild($child);
-
-            if (isset($origName)) {
-                $child->setAttribute('name', $origName);
-            } elseif (
-                $nsName == static::OBJECT_NS
-                && ($this->flags_ & self::ALWAYS_NAME_ATTRS)
-            ) {
-                $child->setAttribute('name', $child->localName);
-            }
-
-            if ($this->flags_ & self::JSON_PTR_ATTRS) {
-                $child->setAttribute('jsonPtr', $jsonPtr);
-            }
-
-            if ($this->flags_ & self::XML_ID_ATTRS) {
-                $child->setAttributeNS(
-                    self::XML_NS,
-                    'xml:id',
-                    $this->jsonPtr2XmlId($jsonPtr)
-                );
-            }
-        } else {
-            $child = $domNode;
-        }
-
-        $child->setAttribute(
-            'type',
-            static::PHP_TYPE_2_JSON_TYPE[gettype($value)]
-        );
-
-        switch (true) {
-            case is_object($value):
-                foreach ($value as $prop => $item) {
-                    $localName = $this->jsonProp2LocalName($prop);
-
-                    $origName = ($localName != $prop) ? $prop : null;
-
-                    $this->append(
-                        $child,
-                        $item,
-                        $jsonPtr->appendSegment($prop),
-                        static::OBJECT_NS,
-                        $localName,
-                        $origName
-                    );
-                }
-
-                break;
-
-            case is_array($value):
-                foreach ($value as $pos => $item) {
-                    $this->append(
-                        $child,
-                        $item,
-                        $jsonPtr->appendSegment($pos),
-                        static::STRUCTURE_NS,
-                        's:item'
-                    );
-                }
-
-                break;
-
-
-            default:
-                if (isset($value)) {
-                    $child->nodeValue = is_bool($value)
-                        ? ['false', 'true'][(int)$value]
-                        : $value;
-                }
-        }
-    }
-
     /**
      * @brief Convert a JSON property name to an XML local name
      *
@@ -222,5 +139,101 @@ class Json2Dom
         );
 
         return $domDocument;
+    }
+
+    protected function append(
+        \DOMNode $domNode,
+        $value,
+        JsonPtr $jsonPtr,
+        ?string $nsName = null,
+        ?string $qName = null,
+        ?string $origName = null
+    ): void {
+        if (isset($nsName)) {
+            $child = $this
+                ->createChild($domNode, $jsonPtr, $nsName, $qName, $origName);
+        } else {
+            $child = $domNode;
+        }
+
+        $child->setAttribute(
+            'type',
+            static::PHP_TYPE_2_JSON_TYPE[gettype($value)]
+        );
+
+        switch (true) {
+            case is_object($value):
+                foreach ($value as $prop => $item) {
+                    $localName = $this->jsonProp2LocalName($prop);
+
+                    $origName = ($localName != $prop) ? $prop : null;
+
+                    $this->append(
+                        $child,
+                        $item,
+                        $jsonPtr->appendSegment($prop),
+                        static::OBJECT_NS,
+                        $localName,
+                        $origName
+                    );
+                }
+
+                break;
+
+            case is_array($value):
+                foreach ($value as $pos => $item) {
+                    $this->append(
+                        $child,
+                        $item,
+                        $jsonPtr->appendSegment($pos),
+                        static::STRUCTURE_NS,
+                        's:item'
+                    );
+                }
+
+                break;
+
+
+            default:
+                if (isset($value)) {
+                    $child->nodeValue = is_bool($value)
+                        ? ['false', 'true'][(int)$value]
+                        : $value;
+                }
+        }
+    }
+
+    protected function createChild(
+        \DOMNode $domNode,
+        JsonPtr $jsonPtr,
+        string $nsName,
+        string $qName,
+        ?string $origName = null
+    ): \DOMElement {
+        $child = $domNode->ownerDocument->createElementNS($nsName, $qName);
+        $domNode->appendChild($child);
+
+        if (isset($origName)) {
+            $child->setAttribute('name', $origName);
+        } elseif (
+            $nsName == static::OBJECT_NS
+            && ($this->flags_ & self::ALWAYS_NAME_ATTRS)
+        ) {
+            $child->setAttribute('name', $child->localName);
+        }
+
+        if ($this->flags_ & self::JSON_PTR_ATTRS) {
+            $child->setAttribute('jsonPtr', $jsonPtr);
+        }
+
+        if ($this->flags_ & self::XML_ID_ATTRS) {
+            $child->setAttributeNS(
+                self::XML_NS,
+                'xml:id',
+                $this->jsonPtr2XmlId($jsonPtr)
+            );
+        }
+
+        return $child;
     }
 }
