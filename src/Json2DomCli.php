@@ -33,7 +33,7 @@ class Json2DomCli extends AbstractCli
         'with-xml-id'            => Json2Dom::XML_ID_ATTRS
     ];
 
-    public function innerRun($arguments = null): int
+    public function innerRun(): int
     {
         $json2DomOptions = 0;
 
