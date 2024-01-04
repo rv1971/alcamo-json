@@ -6,7 +6,7 @@
     "require": {
         "php": "7.3 - 8.0",
         "php-ds/php-ds": "^1.3",
-        "alcamo/cli": "^0.3",
+        "alcamo/cli": "^0.5",
         "alcamo/collection": "^0.1",
         "alcamo/uri": "^0.1"
     },

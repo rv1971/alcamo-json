@@ -5,4 +5,4 @@ namespace alcamo\json;
 
 include $_composer_autoload_path ?? __DIR__ . '/../vendor/autoload.php';
 
-(new Json2DomCli())->process();
+exit((new Json2DomCli())->run());

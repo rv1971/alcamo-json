@@ -7,11 +7,7 @@ use GetOpt\Operand;
 
 class Json2DomCli extends AbstractCli
 {
-    public const SETTINGS = [
-        self::SETTING_STRICT_OPERANDS => true
-    ];
-
-    public const OPERANDS = [ 'jsonFilename' => Operand::OPTIONAL ];
+    public const OPERANDS = [ 'jsonFilename' => Operand::REQUIRED ];
 
     public const OPTIONS = parent::OPTIONS + [
         'with-always-name-attrs' => [
@@ -37,15 +33,8 @@ class Json2DomCli extends AbstractCli
         'with-xml-id'            => Json2Dom::XML_ID_ATTRS
     ];
 
-    public function process($arguments = null)
+    public function innerRun($arguments = null): int
     {
-        parent::process($arguments);
-
-        if (!$this->getOperand('jsonFilename')) {
-            $this->showHelp();
-            exit;
-        }
-
         $json2DomOptions = 0;
 
         foreach (static::OPTIONS_MAP as $cliOption => $json2DomOption) {
@@ -65,7 +54,7 @@ class Json2DomCli extends AbstractCli
 
         echo $domDocument->saveXML();
 
-        exit(0);
+        return 0;
     }
 
     public function createConverter(?int $json2DomOptions = null): Json2Dom
