@@ -41,7 +41,7 @@ class TypedNodeDocumentTest extends TestCase
     {
         $this->expectException(InvalidEnumerator::class);
         $this->expectExceptionMessage(
-            'Invalid value "baz", expected one of ["foo", "bar"] at URI "#/baz"'
+            'Invalid value "baz", expected one of ["foo", "bar"]'
         );
 
         $doc = (new FooDocumentFactory())->createFromJsonText(

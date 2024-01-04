@@ -55,15 +55,19 @@ class JsonDocumentFactory
         try {
             return new $documentClass($this->decodeJson($jsonText), $baseUri);
         } catch (\Throwable $e) {
-            if ($e instanceof ExceptionInterface) {
-                if (isset($e->getMessageContext()['atUri'])) {
-                    throw $e;
-                } else {
-                    throw $e->addMessageContext([ 'atUri' => $baseUri ]);
-                }
-            } else {
-                throw SyntaxError::newFromPrevious($e, [ 'atUri' => $baseUri ]);
+            if (!($e instanceof ExceptionInterface)) {
+                $e = SyntaxError::newFromPrevious($e);
             }
+
+            if (!isset($e->getMessageContext()['atUri'])) {
+                throw $e->addMessageContext([ 'atUri' => $baseUri ]);
+            }
+
+            if (!isset($e->getMessageContext()['inData'])) {
+                $e->addMessageContext([ 'inData' => $jsonText ]);
+            }
+
+            throw $e;
         }
     }
 
