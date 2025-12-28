@@ -38,7 +38,7 @@ class JsonDocumentTest extends TestCase
         $baseUri,
         $expectedRootType
     ): void {
-        $jsonDoc = new JsonDocument($data, new Uri($baseUri));
+        $jsonDoc = new JsonDocument($data, new Uri((string)$baseUri));
 
         $this->assertSame(
             $expectedRootType,
