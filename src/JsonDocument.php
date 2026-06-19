@@ -150,7 +150,7 @@ class JsonDocument
             } else {
                 if (
                     !isset($current->value[$segment])
-                    && !array_key_exists($segment, $current)
+                    && !array_key_exists($segment, $current->value)
                 ) {
                     throw (new NodeNotFound())->setMessageContext(
                         [
